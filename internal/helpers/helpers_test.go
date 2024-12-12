@@ -1,10 +1,10 @@
 package helpers
 
 import (
-	"gofemart/internal/logger"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"passkeeper/internal/logger"
 	"testing"
 )
 

@@ -21,12 +21,12 @@ var UserKey Key = "user"
 // Authenticator выполняет аутентификацию и авторизацию пользователей с использованием токенов JWT и пула баз данных SQL
 type Authenticator struct {
 	dbPool          repositories.SQLExecutor
-	jwtKeys         *config.JWTKeys
+	jwtKeys         *config.Keys
 	tokenExpiration time.Duration
 }
 
 // NewAuthenticator создает и возвращает новый экземпляр Authenticator с указанными параметрами подключения к базе данных и токенам JWT.
-func NewAuthenticator(dbPool repositories.SQLExecutor, jwtKeys *config.JWTKeys, tokenExpiration time.Duration) *Authenticator {
+func NewAuthenticator(dbPool repositories.SQLExecutor, jwtKeys *config.Keys, tokenExpiration time.Duration) *Authenticator {
 	return &Authenticator{
 		dbPool:          dbPool,
 		jwtKeys:         jwtKeys,

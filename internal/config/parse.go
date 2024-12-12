@@ -10,35 +10,41 @@ import (
 
 // NewConfig инициализирует новую консольную конфигурацию, обрабатывает аргументы командной строки
 func NewConfig() (*CliConfig, error) {
-
 	// Регистрируем новое хранилище
 	cnf := &CliConfig{}
 	if err := parseFromViper(cnf); err != nil {
 		return nil, err
 	}
 	// Парсим ключи для JWT токена
-	if err := parseKeys(cnf); err != nil {
+	jwtKeys, err := parseKeys(cnf.PrivateJWTKey, cnf.PublicJWTKey)
+	if err != nil {
 		return nil, err
 	}
+	cnf.JWTKeys = jwtKeys
+	// Парсим ключи для шифрования
+	enKeys, err := parseKeys(cnf.PrivateEncryptKey, cnf.PublicEncryptKey)
+	if err != nil {
+		return nil, err
+	}
+	cnf.EncryptKeys = enKeys
 
 	return cnf, nil
 }
 
 // parseKeys парсим ключи для JWT токена
-func parseKeys(cnf *CliConfig) error {
-	pkey, pubKey, err := parseKeysFromFile(cnf.PrivateKey, cnf.PublicKey)
+func parseKeys(privateKey, publicKey string) (*Keys, error) {
+	pkey, pubKey, err := parseRSAKeys(privateKey, publicKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	cnf.JWTKeys = &JWTKeys{
+	return &Keys{
 		Public:  pubKey,
 		Private: pkey,
-	}
-	return nil
+	}, nil
 }
 
-// parseKeysFromFile получаем ключи для JWT токенов
-func parseKeysFromFile(privateKey string, publicKey string) (*rsa.PrivateKey, *rsa.PublicKey, error) {
+// parseRSAKeys получаем ключи для JWT токенов
+func parseRSAKeys(privateKey string, publicKey string) (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	if privateKey == "" {
 		return nil, nil, errors.New("no private key path specified")
 	}
@@ -85,10 +91,16 @@ func bindEnv() error {
 	if err := viper.BindEnv("HashKey", "KEY"); err != nil {
 		return err
 	}
-	if err := viper.BindEnv("PrivateKey", "PKEY"); err != nil {
+	if err := viper.BindEnv("PrivateJWTKey", "JPKEY"); err != nil {
 		return err
 	}
-	if err := viper.BindEnv("PublicKey", "PUKEY"); err != nil {
+	if err := viper.BindEnv("PublicJWTKey", "JPUKEY"); err != nil {
+		return err
+	}
+	if err := viper.BindEnv("PrivateEncryptKey", "EPKEY"); err != nil {
+		return err
+	}
+	if err := viper.BindEnv("PublicEncryptKey", "EPUKEY"); err != nil {
 		return err
 	}
 	if err := viper.BindEnv("TokenExpiration", "TOKEN_EXPIRATION"); err != nil {
@@ -103,8 +115,10 @@ func bindArg() error {
 	pflag.StringP("LogLevel", "l", DefaultLogLevel, "level of logging")
 	pflag.StringP("DatabaseDSN", "d", DefaultDatabaseDSN, "database connection")
 	pflag.StringP("HashKey", "h", DefaultHashKey, "encrypted key")
-	pflag.StringP("PrivateKey", "r", DefaultPrivateKey, "private key")
-	pflag.StringP("PublicKey", "b", DefaultPublicKey, "public key")
+	pflag.StringP("PrivateJWTKey", "r", DefaultPrivateJWTKey, "private jwt key")
+	pflag.StringP("PublicJWTKey", "b", DefaultPublicJWTKey, "public jwt key")
+	pflag.StringP("PrivateEncryptKey", "p", DefaultPrivateEncryptKey, "private encrypt key")
+	pflag.StringP("PublicEncryptKey", "u", DefaultPublicEncryptKey, "public encrypt key")
 	pflag.DurationP("TokenExpiration", "t", DefaultTokenExpiration, "token expiration time")
 	pflag.Parse()
 	return viper.BindPFlags(pflag.CommandLine)

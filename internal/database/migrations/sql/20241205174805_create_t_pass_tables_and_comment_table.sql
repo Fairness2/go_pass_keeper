@@ -9,8 +9,8 @@ create table public.t_pass
         constraint t_pass_t_user_id_fk
             references public.t_user,
     domen      varchar,
-    username   varchar,
-    password   varchar,
+    username   bytea,
+    password   bytea,
     created_at timestamp default now(),
     updated_at timestamp default now()
 );

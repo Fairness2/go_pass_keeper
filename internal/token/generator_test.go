@@ -3,7 +3,7 @@ package token
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"gofemart/internal/models"
+	"passkeeper/internal/models"
 	"strconv"
 	"testing"
 	"time"
@@ -21,13 +21,13 @@ func TestGenerateAndParse(t *testing.T) {
 	}{
 		{
 			name:      "valid",
-			generator: NewJWTGenerator(pkey, pubKey, time.Hour),
+			generator: NewJWTGenerator(pkey, pubKey, time.Hour, JWTTypeAccess),
 			user:      &models.User{ID: 1},
 			wantErr:   false,
 		},
 		{
 			name:      "expired",
-			generator: NewJWTGenerator(pkey, pubKey, -time.Hour),
+			generator: NewJWTGenerator(pkey, pubKey, -time.Hour, JWTTypeAccess),
 			user:      &models.User{ID: 2},
 			wantErr:   true,
 		},

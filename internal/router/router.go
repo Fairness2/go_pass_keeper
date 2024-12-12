@@ -3,7 +3,9 @@ package router
 import (
 	"github.com/go-chi/chi/v5"
 	cMiddleware "github.com/go-chi/chi/v5/middleware"
+	"passkeeper/internal/services/content"
 	"passkeeper/internal/services/user"
+	"passkeeper/internal/token"
 
 	//_ "gofemart/api"
 	"passkeeper/internal/config"
@@ -15,13 +17,16 @@ import (
 // NewRouter конфигурация роутинга приложение
 func NewRouter(dbPool *database.DBPool, cnf *config.CliConfig) chi.Router {
 	lHandlers := user.NewHandlers(dbPool.DBx, cnf.JWTKeys, cnf.TokenExpiration, cnf.TokenExpiration, cnf.HashKey)
-	//authenticator := token.NewAuthenticator(dbPool.DBx, cnf.JWTKeys, cnf.TokenExpiration)
+	pHandlers := content.NewPasswordService(dbPool.DBx, cnf.EncryptKeys)
+	authenticator := token.NewAuthenticator(dbPool.DBx, cnf.JWTKeys, cnf.TokenExpiration)
+
 	router := chi.NewRouter()
 	// Устанавливаем мидлваре
 	router.Use(
 		middlewares.JSONHeaders,
 		cMiddleware.StripSlashes, // Убираем лишние слеши
-		logger.LogRequests,       // Логируем данные запроса
+		cMiddleware.Compress(5, "gzip", "deflate"),
+		logger.LogRequests, // Логируем данные запроса
 	)
 	// Адрес свагера
 	/*router.Get("/swagger/*", httpSwagger.Handler(
@@ -31,6 +36,19 @@ func NewRouter(dbPool *database.DBPool, cnf *config.CliConfig) chi.Router {
 		r.Post("/register", lHandlers.RegistrationHandler)
 		r.Post("/login", lHandlers.LoginHandler)
 	})
+	router.Route("/api/content", func(r chi.Router) {
+		r.Group(registerPasswordRoutes(pHandlers, authenticator))
+	})
 
 	return router
+}
+
+// registerRoutesWithAuth маршруты с аутентификацией
+func registerPasswordRoutes(pHandlers *content.PasswordService, authenticator *token.Authenticator) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(authenticator.Middleware)
+		r.Post("/password", pHandlers.SavePasswordHandler)
+		r.Put("/password", pHandlers.UpdatePasswordHandler)
+		r.Get("/password", pHandlers.GetUserPasswords)
+	}
 }
