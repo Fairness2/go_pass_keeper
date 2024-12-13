@@ -1,23 +1,22 @@
 package models
 
 import (
-	"passkeeper/internal/encrypt"
 	"time"
 )
 
 type PasswordContent struct {
-	ID         int64     `db:"id"`
-	UserID     int64     `db:"user_id"`
-	Domen      string    `db:"domen"`
-	Username   string    `db:"-"`
-	Password   string    `db:"-"`
-	CreatedAt  time.Time `db:"created_at"`
-	UpdatedAt  time.Time `db:"updated_at"`
-	EnPassword []byte    `db:"password"`
-	EnUsername []byte    `db:"username"`
+	ID        int64     `db:"id"`
+	UserID    int64     `db:"user_id"`
+	Domen     string    `db:"domen"`
+	Username  []byte    `db:"username"`
+	Password  []byte    `db:"password"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+	//EnPassword []byte    `db:"password"`
+	//EnUsername []byte    `db:"username"`
 }
 
-func (p *PasswordContent) EncryptPrivateFields(encrypter *encrypt.Encrypter) error {
+/*func (p *PasswordContent) EncryptPrivateFields(encrypter *encrypt.Encrypter) error {
 	if p.Password != "" {
 		encr, err := encrypter.Encrypt([]byte(p.Password))
 		if err != nil {
@@ -51,7 +50,7 @@ func (p *PasswordContent) DecryptPrivateFields(decrypter *encrypt.Decrypter) err
 		p.Username = string(dec)
 	}
 	return nil
-}
+}*/
 
 type PasswordWithComment struct {
 	PasswordContent

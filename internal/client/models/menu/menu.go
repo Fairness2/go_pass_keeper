@@ -4,7 +4,10 @@ import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"time"
+	"passkeeper/internal/client/models/password"
+	"passkeeper/internal/client/serverclient"
+	"passkeeper/internal/client/service"
+	"passkeeper/internal/client/user"
 )
 
 const (
@@ -13,42 +16,22 @@ const (
 
 // General stuff for styling the view
 var (
-	keywordStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("211"))
-	subtleStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
-	ticksStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("79"))
-	checkboxStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("212"))
+	subtleStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	checkboxStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 	dotStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Render(dotChar)
 	mainStyle     = lipgloss.NewStyle().MarginLeft(2)
 )
 
-type (
-	tickMsg  struct{}
-	frameMsg struct{}
-)
-
 func NewModel() Model {
-	return Model{0, false}
-}
-
-func tick() tea.Cmd {
-	return tea.Tick(time.Second, func(time.Time) tea.Msg {
-		return tickMsg{}
-	})
-}
-
-func frame() tea.Cmd {
-	return tea.Tick(time.Second/60, func(time.Time) tea.Msg {
-		return frameMsg{}
-	})
+	return Model{0}
 }
 
 type Model struct {
 	Choice int
-	Chosen bool
 }
 
 func (m Model) Init() tea.Cmd {
-	return tick()
+	return nil
 }
 
 // Main update function.
@@ -69,8 +52,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.Choice = 0
 			}
 		case "enter":
-			m.Chosen = true
-			return m, tea.Quit
+			return m.nextView()
 		}
 	}
 
@@ -112,4 +94,14 @@ func checkbox(label string, checked bool) string {
 		return checkboxStyle.Render("[x] " + label)
 	}
 	return fmt.Sprintf("[ ] %s", label)
+}
+
+func (m Model) nextView() (tea.Model, tea.Cmd) {
+	switch m.Choice {
+	case 0:
+		l := password.NewList(service.NewPasswordService(serverclient.Inst, user.CurrentUser))
+		return l, l.Init()
+	default:
+		return nil, nil
+	}
 }

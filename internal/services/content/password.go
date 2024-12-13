@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"passkeeper/internal/commonerrors"
 	"passkeeper/internal/config"
-	"passkeeper/internal/encrypt"
 	"passkeeper/internal/helpers"
 	"passkeeper/internal/logger"
 	"passkeeper/internal/models"
@@ -46,17 +45,17 @@ func (s *PasswordService) SavePasswordHandler(response http.ResponseWriter, requ
 		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	encryper := encrypt.NewEncrypter(s.keys.Public)
+	//encryper := encrypt.NewEncrypter(s.keys.Public)
 	pass := models.PasswordContent{
 		UserID:   user.ID,
 		Domen:    body.Domen,
 		Username: body.Username,
 		Password: body.Password,
 	}
-	if err = pass.EncryptPrivateFields(encryper); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t encrypt", http.StatusInternalServerError, response)
-		return
-	}
+	//if err = pass.EncryptPrivateFields(encryper); err != nil {
+	//	helpers.ProcessResponseWithStatus("Can`t encrypt", http.StatusInternalServerError, response)
+	//	return
+	//}
 	comment := models.Comment{
 		ContentType: models.TypePassword,
 		Comment:     body.Comment,
@@ -102,7 +101,7 @@ func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, re
 		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	encryper := encrypt.NewEncrypter(s.keys.Public)
+	//encryper := encrypt.NewEncrypter(s.keys.Public)
 	pass := models.PasswordContent{
 		ID:       body.ID,
 		UserID:   user.ID,
@@ -110,10 +109,10 @@ func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, re
 		Username: body.Username,
 		Password: body.Password,
 	}
-	if err = pass.EncryptPrivateFields(encryper); err != nil {
+	/*if err = pass.EncryptPrivateFields(encryper); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t encrypt", http.StatusInternalServerError, response)
 		return
-	}
+	}*/
 	comment := models.Comment{
 		ContentType: models.TypePassword,
 		Comment:     body.Comment,
@@ -138,13 +137,13 @@ func (s *PasswordService) GetUserPasswords(response http.ResponseWriter, request
 		helpers.SetInternalError(err, response)
 		return
 	}
-	decryptor := encrypt.NewDecrypter(s.keys.Private)
+	//decryptor := encrypt.NewDecrypter(s.keys.Private)
 	passwordsData := make([]payloads.PasswordWithComment, 0, len(passwords))
 	for _, password := range passwords {
-		if err = password.DecryptPrivateFields(decryptor); err != nil {
-			helpers.SetInternalError(err, response)
-			return
-		}
+		//if err = password.DecryptPrivateFields(decryptor); err != nil {
+		//	helpers.SetInternalError(err, response)
+		//	return
+		//}
 		passwordsData = append(passwordsData, payloads.PasswordWithComment{
 			Password: payloads.Password{
 				ID:       password.ID,

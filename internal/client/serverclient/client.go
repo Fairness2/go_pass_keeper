@@ -7,10 +7,12 @@ import (
 
 var ErrEmptyBaseURL = errors.New("empty base url")
 
+var Inst *Client
+
 type Client struct {
 	Client       *resty.Client
-	token        string
-	refreshToken string
+	Token        string
+	RefreshToken string
 }
 
 // NewClient инициализирует новый RestClient с предоставленным базовым URL-адресом.
@@ -24,6 +26,6 @@ func NewClient(baseURL string) (*Client, error) {
 }
 
 func (c *Client) SetTokens(token, refreshToken string) {
-	c.token = token
-	c.refreshToken = refreshToken
+	c.Token = token
+	c.RefreshToken = refreshToken
 }

@@ -17,12 +17,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	clnt, err := serverclient.NewClient(cnf.ServerAddress)
+	serverclient.Inst, err = serverclient.NewClient(cnf.ServerAddress)
 	if err != nil {
 		log.Fatal(err)
 	}
-	lgnService := service.NewLoginService(clnt)
-	if _, err := tea.NewProgram(login.InitialModel(lgnService)).Run(); err != nil {
+	lgnService := service.NewLoginService(serverclient.Inst)
+	initialModel := login.InitialModel(lgnService)
+	if _, err := tea.NewProgram(initialModel, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Printf("could not start program: %s\n", err)
 		os.Exit(1)
 	}
