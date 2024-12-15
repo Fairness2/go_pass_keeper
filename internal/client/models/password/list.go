@@ -52,9 +52,10 @@ func NewList(passwordService *service.PasswordService) List {
 	}
 	m.list.SetShowTitle(false)
 	m.list.AdditionalShortHelpKeys = func() []key.Binding {
-		binds := make([]key.Binding, 2)
+		binds := make([]key.Binding, 3)
 		binds[0] = key.NewBinding(key.WithHelp("n", "Новый пароль"), key.WithKeys("n"))
 		binds[1] = key.NewBinding(key.WithHelp("u", "Обновить пароль"), key.WithKeys("u"))
+		binds[2] = key.NewBinding(key.WithHelp("d", "Удалить пароль"), key.WithKeys("d"))
 		return binds
 	}
 
@@ -90,6 +91,8 @@ func (m List) updateWhileNotSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.newPassword()
 		case "u":
 			return m.updatePassword()
+		case "d":
+			return m.deletePassword()
 		}
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
@@ -138,6 +141,22 @@ func (m List) updatePassword() (tea.Model, tea.Cmd) {
 	}
 	newForm := InitialForm(m.pService, selectedData)
 	return newForm, newForm.Init()
+}
+
+// deletePassword удаляет выбранный пароль с помощью PasswordService и обновляет список модели.
+// Возвращает обновленную модель и команду.
+// Если во время удаления или обновления возникает ошибка, устанавливается modelError и не выдается команда.
+func (m List) deletePassword() (tea.Model, tea.Cmd) {
+	selected := m.list.SelectedItem().(PassData)
+	err := m.pService.DeletePassword(selected.ID)
+	if err != nil {
+		m.modelError = err
+		return m, nil
+	}
+	if err = m.refresh(); err != nil {
+		m.modelError = err
+	}
+	return m, nil
 }
 
 // updateWhileSelected обрабатывает обновления модели при выбранном элементе.

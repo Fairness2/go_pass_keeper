@@ -3,10 +3,15 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/encrypt/cipher"
 	"passkeeper/internal/payloads"
+)
+
+const (
+	passURL = "/api/content/password"
 )
 
 type PasswordService struct {
@@ -24,7 +29,7 @@ func NewPasswordService(client *serverclient.Client, user *user.User) *PasswordS
 func (s *PasswordService) GetPasswords() ([]payloads.PasswordWithComment, error) {
 	request := s.client.Client.R()
 	request.SetAuthToken(s.client.Token)
-	response, err := request.Get("/api/content/password")
+	response, err := request.Get(passURL)
 	if err != nil {
 		return nil, errors.Join(ErrSendingRequest, err)
 	}
@@ -73,7 +78,7 @@ func (s *PasswordService) CreatePassword(body *payloads.PasswordWithComment) err
 	request := s.client.Client.R()
 	request.SetAuthToken(s.client.Token)
 	request.SetBody(body)
-	response, err := request.Post("/api/content/password")
+	response, err := request.Post(passURL)
 	if err != nil {
 		return errors.Join(ErrSendingRequest, err)
 	}
@@ -87,7 +92,20 @@ func (s *PasswordService) UpdatePassword(body *payloads.PasswordWithComment) err
 	request := s.client.Client.R()
 	request.SetAuthToken(s.client.Token)
 	request.SetBody(body)
-	response, err := request.Put("/api/content/password")
+	response, err := request.Put(passURL)
+	if err != nil {
+		return errors.Join(ErrSendingRequest, err)
+	}
+	if response.StatusCode() != 200 {
+		return ErrInvalidResponseStatus
+	}
+	return nil
+}
+
+func (s *PasswordService) DeletePassword(id int64) error {
+	request := s.client.Client.R()
+	request.SetAuthToken(s.client.Token)
+	response, err := request.Delete(fmt.Sprintf("%s/%d", passURL, id))
 	if err != nil {
 		return errors.Join(ErrSendingRequest, err)
 	}

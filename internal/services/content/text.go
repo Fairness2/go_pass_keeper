@@ -16,23 +16,23 @@ import (
 	"strconv"
 )
 
-// PasswordService предоставляет методы для управления паролями пользователей и соответствующими комментариями в системе.
-type PasswordService struct {
+// TextService предоставляет методы для управления текстами пользователей и соответствующими комментариями в системе.
+type TextService struct {
 	dbPool repositories.SQLExecutor
 }
 
-// NewPasswordService инициализирует и возвращает новый экземпляр PasswordService, настроенный с использованием предоставленной базой.
-func NewPasswordService(dbPool repositories.SQLExecutor) *PasswordService {
-	return &PasswordService{
+// NewTextService инициализирует и возвращает новый экземпляр TextService, настроенный с использованием предоставленной базой.
+func NewTextService(dbPool repositories.SQLExecutor) *TextService {
+	return &TextService{
 		dbPool: dbPool,
 	}
 }
 
-// SavePasswordHandler обрабатывает HTTP-запросы на сохранение нового пароля вместе с дополнительным комментарием для аутентифицированного пользователя.
+// SaveTextHandler обрабатывает HTTP-запросы на сохранение нового текста вместе с дополнительным комментарием для аутентифицированного пользователя.
 // Он гарантирует корректность тела запроса, предотвращает предоставление идентификатора и связывает пароль с пользователем.
-func (s *PasswordService) SavePasswordHandler(response http.ResponseWriter, request *http.Request) {
+func (s *TextService) SaveTextHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	body, err := s.getSavePasswordBody(request)
+	body, err := s.getSaveTextBody(request)
 	if err != nil {
 		helpers.ProcessRequestErrorWithBody(err, response)
 		return
@@ -49,24 +49,22 @@ func (s *PasswordService) SavePasswordHandler(response http.ResponseWriter, requ
 		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	pass := models.PasswordContent{
+	pass := models.TextContent{
 		UserID:   user.ID,
-		Domen:    body.Domen,
-		Username: body.Username,
-		Password: body.Password,
+		TextData: body.TextData,
 	}
 	comment := models.Comment{
-		ContentType: models.TypePassword,
+		ContentType: models.TypeText,
 		Comment:     body.Comment,
 	}
-	repository := repositories.NewPasswordRepository(request.Context(), s.dbPool)
+	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
 	if err = repository.Create(&pass, &comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
 
-// getSavePasswordBody анализирует и проверяет тело HTTP-запроса для извлечения полезных данных SavePassword или возвращает ошибку.
-func (s *PasswordService) getSavePasswordBody(request *http.Request) (*payloads.SavePassword, error) {
+// getSaveTextBody анализирует и проверяет тело HTTP-запроса для извлечения полезных данных SaveText или возвращает ошибку.
+func (s *TextService) getSaveTextBody(request *http.Request) (*payloads.SaveText, error) {
 	// TODO валидация
 	// Читаем тело запроса
 	rawBody, err := io.ReadAll(request.Body)
@@ -74,7 +72,7 @@ func (s *PasswordService) getSavePasswordBody(request *http.Request) (*payloads.
 		return nil, err
 	}
 	// Парсим тело в структуру запроса
-	var body payloads.SavePassword
+	var body payloads.SaveText
 	err = json.Unmarshal(rawBody, &body)
 	if err != nil {
 		return nil, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
@@ -83,11 +81,11 @@ func (s *PasswordService) getSavePasswordBody(request *http.Request) (*payloads.
 	return &body, nil
 }
 
-// UpdatePasswordHandler обрабатывает HTTP-запросы на обновление существующего пароля и связанного с ним комментария для аутентифицированного пользователя.
+// UpdateTextHandler обрабатывает HTTP-запросы на обновление существующего текста и связанного с ним комментария для аутентифицированного пользователя.
 // Он проверяет тело запроса, проверяет наличие пароля пользователя и обеспечивает правильную обработку обновлений.
-func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, request *http.Request) {
+func (s *TextService) UpdateTextHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	body, err := s.getSavePasswordBody(request)
+	body, err := s.getSaveTextBody(request)
 	if err != nil {
 		helpers.ProcessRequestErrorWithBody(err, response)
 		return
@@ -103,25 +101,23 @@ func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, re
 		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	pass := models.PasswordContent{
+	text := models.TextContent{
 		ID:       body.ID,
 		UserID:   user.ID,
-		Domen:    body.Domen,
-		Username: body.Username,
-		Password: body.Password,
+		TextData: body.TextData,
 	}
 	comment := models.Comment{
-		ContentType: models.TypePassword,
+		ContentType: models.TypeText,
 		Comment:     body.Comment,
 		ContentID:   body.ID,
 	}
-	repository := repositories.NewPasswordRepository(request.Context(), s.dbPool)
+	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
 
 	// Проверяем есть ли такой пароль у пользователя
-	_, err = repository.GetPasswordsByUserIDAndId(pass.ID, pass.UserID)
+	_, err = repository.GetTextByUserIDAndId(text.ID, text.UserID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
-			helpers.ProcessResponseWithStatus("Password not found", http.StatusNotFound, response)
+			helpers.ProcessResponseWithStatus("Text not found", http.StatusNotFound, response)
 			return
 		} else {
 			helpers.SetInternalError(err, response)
@@ -129,39 +125,37 @@ func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, re
 		}
 	}
 	// Обновляем пароль
-	if err = repository.Create(&pass, &comment); err != nil {
+	if err = repository.Create(&text, &comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
 
-// GetUserPasswords обрабатывает запросы HTTP GET для получения всех паролей и комментариев к ним для аутентифицированного пользователя.
-// Он извлекает пользователя из контекста запроса, извлекает соответствующие пароли из репозитория и возвращает их в формате JSON.
-func (s *PasswordService) GetUserPasswords(response http.ResponseWriter, request *http.Request) {
+// GetUserTexts обрабатывает запросы HTTP GET для получения всех текстов и комментариев к ним для аутентифицированного пользователя.
+// Он извлекает пользователя из контекста запроса, извлекает соответствующие тексты из репозитория и возвращает их в формате JSON.
+func (s *TextService) GetUserTexts(response http.ResponseWriter, request *http.Request) {
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
 		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	repository := repositories.NewPasswordRepository(request.Context(), s.dbPool)
-	passwords, err := repository.GetPasswordsByUserID(user.ID)
+	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
+	texts, err := repository.GetTextsByUserID(user.ID)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
 	}
-	passwordsData := make([]payloads.PasswordWithComment, 0, len(passwords))
-	for _, password := range passwords {
-		passwordsData = append(passwordsData, payloads.PasswordWithComment{
-			Password: payloads.Password{
-				ID:       password.ID,
-				Domen:    password.Domen,
-				Username: password.Username,
-				Password: password.Password,
+	textsData := make([]payloads.TextWithComment, 0, len(texts))
+	for _, text := range texts {
+		textsData = append(textsData, payloads.TextWithComment{
+			Text: payloads.Text{
+				ID:       text.ID,
+				TextData: text.TextData,
 			},
-			Comment: password.Comment,
+			Comment: text.Comment,
 		})
 	}
-	marshaledBody, err := json.Marshal(passwordsData)
+	marshaledBody, err := json.Marshal(textsData)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
@@ -171,9 +165,9 @@ func (s *PasswordService) GetUserPasswords(response http.ResponseWriter, request
 	}
 }
 
-// DeleteUserPasswords обрабатывает удаление записи пароля пользователя по его идентификатору.
+// DeleteUserText обрабатывает удаление записи текста пользователя по его идентификатору.
 // Проверяет аутентификацию пользователя и гарантирует, что идентификатор пароля правильно анализируется из запроса.
-func (s *PasswordService) DeleteUserPasswords(response http.ResponseWriter, request *http.Request) {
+func (s *TextService) DeleteUserText(response http.ResponseWriter, request *http.Request) {
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
@@ -183,11 +177,11 @@ func (s *PasswordService) DeleteUserPasswords(response http.ResponseWriter, requ
 	strID := chi.URLParam(request, "id")
 	id, err := strconv.ParseInt(strID, 10, 64)
 	if err != nil {
-		helpers.ProcessResponseWithStatus("Password ID is not correct", http.StatusBadRequest, response)
+		helpers.ProcessResponseWithStatus("Text ID is not correct", http.StatusBadRequest, response)
 		return
 	}
-	repository := repositories.NewPasswordRepository(request.Context(), s.dbPool)
-	if err = repository.DeletePasswordByUserIDAndID(user.ID, id); err != nil {
+	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
+	if err = repository.DeleteTextByUserIDAndID(user.ID, id); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
 		return
 	}

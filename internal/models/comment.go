@@ -5,6 +5,7 @@ import "time"
 const (
 	TypePassword = iota
 	TypeFile
+	TypeText
 )
 
 type ContentType = int8

@@ -7,7 +7,7 @@ import (
 	"passkeeper/internal/services/user"
 	"passkeeper/internal/token"
 
-	//_ "gofemart/api"
+	//_ "passkeeper/api"
 	"passkeeper/internal/config"
 	"passkeeper/internal/database"
 	"passkeeper/internal/logger"
@@ -17,7 +17,8 @@ import (
 // NewRouter конфигурация роутинга приложение
 func NewRouter(dbPool *database.DBPool, cnf *config.CliConfig) chi.Router {
 	lHandlers := user.NewHandlers(dbPool.DBx, cnf.JWTKeys, cnf.TokenExpiration, cnf.TokenExpiration, cnf.HashKey)
-	pHandlers := content.NewPasswordService(dbPool.DBx, cnf.EncryptKeys)
+	pHandlers := content.NewPasswordService(dbPool.DBx)
+	tHandlers := content.NewTextService(dbPool.DBx)
 	authenticator := token.NewAuthenticator(dbPool.DBx, cnf.JWTKeys, cnf.TokenExpiration)
 
 	router := chi.NewRouter()
@@ -38,17 +39,30 @@ func NewRouter(dbPool *database.DBPool, cnf *config.CliConfig) chi.Router {
 	})
 	router.Route("/api/content", func(r chi.Router) {
 		r.Group(registerPasswordRoutes(pHandlers, authenticator))
+		r.Group(registerTextRoutes(tHandlers, authenticator))
 	})
 
 	return router
 }
 
-// registerRoutesWithAuth маршруты с аутентификацией
+// registerPasswordRoutes маршруты с паролями
 func registerPasswordRoutes(pHandlers *content.PasswordService, authenticator *token.Authenticator) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Use(authenticator.Middleware)
 		r.Post("/password", pHandlers.SavePasswordHandler)
 		r.Put("/password", pHandlers.UpdatePasswordHandler)
 		r.Get("/password", pHandlers.GetUserPasswords)
+		r.Delete("/password/{id}", pHandlers.DeleteUserPasswords)
+	}
+}
+
+// registerTextRoutes маршруты с текстами
+func registerTextRoutes(pHandlers *content.TextService, authenticator *token.Authenticator) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(authenticator.Middleware)
+		r.Post("/text", pHandlers.SaveTextHandler)
+		r.Put("/text", pHandlers.UpdateTextHandler)
+		r.Get("/text", pHandlers.GetUserTexts)
+		r.Delete("/text/{id}", pHandlers.DeleteUserText)
 	}
 }
