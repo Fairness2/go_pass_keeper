@@ -1,107 +1,88 @@
 package menu
 
 import (
-	"fmt"
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"passkeeper/internal/client/components"
 	"passkeeper/internal/client/models/password"
 	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/service"
+	"passkeeper/internal/client/style"
 	"passkeeper/internal/client/user"
+	"strings"
 )
 
-const (
-	dotChar = " • "
-)
-
-// General stuff for styling the view
 var (
-	subtleStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-	checkboxStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
-	dotStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Render(dotChar)
-	mainStyle     = lipgloss.NewStyle().MarginLeft(2)
+	headerText = style.HeaderStyle.Render("Выберите режим")
 )
 
-func NewModel() Model {
-	return Model{0}
-}
-
+// Model представляет собой основную структуру, содержащую компоненты пользовательского интерфейса и привязки клавиш для навигации и взаимодействия.
 type Model struct {
-	Choice int
+	cb       *components.Checkbox
+	help     help.Model
+	helpKeys []key.Binding
 }
 
+// NewModel инициализирует и возвращает новый экземпляр Model с настройками по умолчанию и привязками клавиш для навигации.
+func NewModel() Model {
+	return Model{
+		cb: components.NewCheckbox(0,
+			"Пары логин/пароль",
+			"Произвольные текстовые данные",
+			"Произвольные бинарные данные",
+			"Данные банковских карт"),
+		help: help.New(),
+		helpKeys: []key.Binding{
+			key.NewBinding(key.WithHelp("ctrl+c, esc", "Выход"), key.WithKeys("ctrl+c", "esc")),
+			key.NewBinding(key.WithHelp("j/k, up/down", "Выбор"), key.WithKeys("j", "down", "k", "up")),
+			key.NewBinding(key.WithHelp("enter", "Принять"), key.WithKeys("enter")),
+		},
+	}
+}
+
+// Init инициализирует модель и возвращает команду, которая будет выполнена при запуске программы.
 func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-// Main update function.
+// Update обрабатывает ввод пользователя и соответствующим образом обновляет состояние модели. Он может вернуть команду для выполнения.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q", "esc", "ctrl+c":
+		case "esc", "ctrl+c":
 			return m, tea.Quit
-		case "j", "down":
-			m.Choice++
-			if m.Choice > 3 {
-				m.Choice = 3
-			}
-		case "k", "up":
-			m.Choice--
-			if m.Choice < 0 {
-				m.Choice = 0
-			}
 		case "enter":
 			return m.nextView()
 		}
 	}
 
+	m.cb, _ = m.cb.Update(msg)
+
 	return m, nil
 }
 
-// The main view, which just calls the appropriate sub-view
+// View отображает полное представление модели, включая заголовок, компонент флажка и краткую справочную информацию.
 func (m Model) View() string {
-	var s string
-	s = choicesView(m)
-	return mainStyle.Render("\n" + s + "\n\n")
+	var b strings.Builder
+	b.WriteString(headerText)
+	b.WriteString("\n\n")
+	b.WriteString(m.cb.View())
+	b.WriteString("\n\n")
+	b.WriteString(m.help.ShortHelpView(m.helpKeys))
+
+	return b.String()
 }
 
-// Sub-views
-
-// The first view, where you're choosing a task
-func choicesView(m Model) string {
-	c := m.Choice
-
-	tpl := "Выберите режим?\n\n"
-	tpl += "%s\n\n"
-	tpl += subtleStyle.Render("j/k, up/down: выбор") + dotStyle +
-		subtleStyle.Render("enter: выбрать") + dotStyle +
-		subtleStyle.Render("q, esc: выйти")
-
-	choices := fmt.Sprintf(
-		"%s\n%s\n%s\n%s",
-		checkbox("Пары логин/пароль", c == 0),
-		checkbox("Произвольные текстовые данные", c == 1),
-		checkbox("Произвольные бинарные данные", c == 2),
-		checkbox("Данные банковских карт", c == 3),
-	)
-
-	return fmt.Sprintf(tpl, choices)
-}
-
-func checkbox(label string, checked bool) string {
-	if checked {
-		return checkboxStyle.Render("[x] " + label)
-	}
-	return fmt.Sprintf("[ ] %s", label)
-}
-
+// nextView определяет следующее представление на основе выбора флажка и инициализирует его;
+// возвращает новую модель и команду.
 func (m Model) nextView() (tea.Model, tea.Cmd) {
-	switch m.Choice {
+	switch m.cb.GetChoice() {
 	case 0:
 		l := password.NewList(service.NewPasswordService(serverclient.Inst, user.CurrentUser))
 		return l, l.Init()
 	default:
-		return nil, nil
+		return m, nil
 	}
 }

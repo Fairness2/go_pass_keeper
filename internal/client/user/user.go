@@ -1,7 +1,8 @@
 package user
 
 type User struct {
-	ID int
+	ID       int
+	Password string
 }
 
 var CurrentUser *User

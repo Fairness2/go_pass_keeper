@@ -1,11 +1,13 @@
 package cipher
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
 	"io"
+	"math"
 )
 
 type Cipher struct {
@@ -14,7 +16,7 @@ type Cipher struct {
 
 func NewCipher(key []byte) *Cipher {
 	return &Cipher{
-		Key: key,
+		Key: padKey(key),
 	}
 }
 
@@ -51,4 +53,18 @@ func (c *Cipher) Decrypt(body []byte) ([]byte, error) {
 
 	nonce, ciphertext := body[:nonceSize], body[nonceSize:]
 	return gcm.Open(nil, nonce, ciphertext, nil)
+}
+
+func padKey(key []byte) []byte { // TODO Как то заполнить дополнительно
+	newKey := make([]byte, 32)
+	if len(key) > 32 {
+		copy(newKey, key)
+	} else if len(key) < 32 {
+		times := math.Ceil(float64(32) / float64(len(key)))
+		copy(newKey, bytes.Repeat(key, int(times)))
+	} else {
+		copy(newKey, key)
+	}
+
+	return newKey
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"passkeeper/internal/client/serverclient"
+	"passkeeper/internal/client/user"
 	"passkeeper/internal/payloads"
 )
 
@@ -54,5 +55,8 @@ func (s *LoginService) Login(username, password string) error {
 		return errors.Join(ErrInvalidResponseBody, err)
 	}
 	s.client.SetTokens(tokens.Token, tokens.Refresh)
+	user.CurrentUser = &user.User{
+		Password: password,
+	}
 	return nil
 }
