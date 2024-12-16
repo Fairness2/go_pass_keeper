@@ -19,6 +19,7 @@ func NewRouter(dbPool *database.DBPool, cnf *config.CliConfig) chi.Router {
 	lHandlers := user.NewHandlers(dbPool.DBx, cnf.JWTKeys, cnf.TokenExpiration, cnf.TokenExpiration, cnf.HashKey)
 	pHandlers := content.NewPasswordService(dbPool.DBx)
 	tHandlers := content.NewTextService(dbPool.DBx)
+	cHandlers := content.NewCardService(dbPool.DBx)
 	authenticator := token.NewAuthenticator(dbPool.DBx, cnf.JWTKeys, cnf.TokenExpiration)
 
 	router := chi.NewRouter()
@@ -40,6 +41,7 @@ func NewRouter(dbPool *database.DBPool, cnf *config.CliConfig) chi.Router {
 	router.Route("/api/content", func(r chi.Router) {
 		r.Group(registerPasswordRoutes(pHandlers, authenticator))
 		r.Group(registerTextRoutes(tHandlers, authenticator))
+		r.Group(registerCardRoutes(cHandlers, authenticator))
 	})
 
 	return router
@@ -64,5 +66,16 @@ func registerTextRoutes(pHandlers *content.TextService, authenticator *token.Aut
 		r.Put("/text", pHandlers.UpdateTextHandler)
 		r.Get("/text", pHandlers.GetUserTexts)
 		r.Delete("/text/{id}", pHandlers.DeleteUserText)
+	}
+}
+
+// registerCardRoutes маршруты с картами
+func registerCardRoutes(pHandlers *content.CardService, authenticator *token.Authenticator) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(authenticator.Middleware)
+		r.Post("/card", pHandlers.SaveCardHandler)
+		r.Put("/card", pHandlers.UpdateCardHandler)
+		r.Get("/card", pHandlers.GetUserCards)
+		r.Delete("/card/{id}", pHandlers.DeleteUserCard)
 	}
 }

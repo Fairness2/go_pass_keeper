@@ -6,6 +6,7 @@ const (
 	TypePassword = iota
 	TypeFile
 	TypeText
+	TypeCard
 )
 
 type ContentType = int8
