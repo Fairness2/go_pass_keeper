@@ -89,19 +89,19 @@ func (pr *TextRepository) GetTextsByUserID(userID int64) ([]models.TextWithComme
 
 // GetTextByUserIDAndId извлекает текст по его идентификатору и идентификатору связанного пользователя. Возвращает текст или ошибку.
 func (pr *TextRepository) GetTextByUserIDAndId(userID int64, id int64) (*models.TextContent, error) {
-	var text *models.TextContent
 	row := pr.db.QueryRowxContext(pr.ctx, getTextByUserIDAndIDSQL, id, userID)
 	err := row.Err()
-	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		return nil, errors.Join(ErrNotExist, err)
-	}
 	if err != nil {
 		return nil, err
 	}
-	if err = row.StructScan(text); err != nil {
+	var text models.TextContent
+	if err = row.StructScan(&text); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.Join(ErrNotExist, err)
+		}
 		return nil, err
 	}
-	return text, err
+	return &text, err
 }
 
 // DeleteTextByUserIDAndID удаляет текст и связанные с ним комментарии для данного идентификатора пользователя и идентификатора текста.

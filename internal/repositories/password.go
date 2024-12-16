@@ -96,19 +96,19 @@ func (pr *PasswordRepository) GetPasswordsByUserID(userID int64) ([]models.Passw
 
 // GetPasswordsByUserIDAndId извлекает пароль по его идентификатору и идентификатору связанного пользователя. Возвращает пароль или ошибку.
 func (pr *PasswordRepository) GetPasswordsByUserIDAndId(userID int64, id int64) (*models.PasswordContent, error) {
-	var password *models.PasswordContent
 	row := pr.db.QueryRowxContext(pr.ctx, getPasswordsByUserIDAndIDSQL, id, userID)
 	err := row.Err()
-	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		return nil, errors.Join(ErrNotExist, err)
-	}
 	if err != nil {
 		return nil, err
 	}
-	if err = row.StructScan(password); err != nil {
+	var password models.PasswordContent
+	if err = row.StructScan(&password); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.Join(ErrNotExist, err)
+		}
 		return nil, err
 	}
-	return password, err
+	return &password, err
 }
 
 // DeletePasswordByUserIDAndID удаляет пароль и связанные с ним комментарии для данного идентификатора пользователя и идентификатора пароля.

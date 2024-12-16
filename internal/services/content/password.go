@@ -118,7 +118,7 @@ func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, re
 	repository := repositories.NewPasswordRepository(request.Context(), s.dbPool)
 
 	// Проверяем есть ли такой пароль у пользователя
-	_, err = repository.GetPasswordsByUserIDAndId(pass.ID, pass.UserID)
+	_, err = repository.GetPasswordsByUserIDAndId(pass.UserID, pass.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("Password not found", http.StatusNotFound, response)

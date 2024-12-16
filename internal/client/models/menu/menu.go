@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"passkeeper/internal/client/components"
 	"passkeeper/internal/client/models/password"
+	"passkeeper/internal/client/models/text"
 	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
@@ -81,6 +82,9 @@ func (m Model) nextView() (tea.Model, tea.Cmd) {
 	switch m.cb.GetChoice() {
 	case 0:
 		l := password.NewList(service.NewPasswordService(serverclient.Inst, user.CurrentUser))
+		return l, l.Init()
+	case 1:
+		l := text.NewList(service.NewTextService(serverclient.Inst, user.CurrentUser))
 		return l, l.Init()
 	default:
 		return m, nil

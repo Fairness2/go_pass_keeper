@@ -114,7 +114,7 @@ func (s *TextService) UpdateTextHandler(response http.ResponseWriter, request *h
 	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
 
 	// Проверяем есть ли такой пароль у пользователя
-	_, err = repository.GetTextByUserIDAndId(text.ID, text.UserID)
+	_, err = repository.GetTextByUserIDAndId(text.UserID, text.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("Text not found", http.StatusNotFound, response)
