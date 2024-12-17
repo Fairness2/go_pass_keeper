@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"passkeeper/internal/client/components"
+	"passkeeper/internal/client/models/card"
 	"passkeeper/internal/client/models/password"
 	"passkeeper/internal/client/models/text"
 	"passkeeper/internal/client/serverclient"
@@ -85,6 +86,9 @@ func (m Model) nextView() (tea.Model, tea.Cmd) {
 		return l, l.Init()
 	case 1:
 		l := text.NewList(service.NewTextService(serverclient.Inst, user.CurrentUser))
+		return l, l.Init()
+	case 3:
+		l := card.NewList(service.NewCardService(serverclient.Inst, user.CurrentUser))
 		return l, l.Init()
 	default:
 		return m, nil

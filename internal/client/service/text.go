@@ -22,7 +22,7 @@ type TextData struct {
 
 func (i TextData) Title() string {
 	if !i.IsDecrypted {
-		return "Не расшифрованно"
+		return "Не расшифровано"
 	}
 	text := []rune(string(i.TextData))
 	if len(text) > 20 {
