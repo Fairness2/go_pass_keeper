@@ -33,8 +33,8 @@ create table public.t_comment
     content_type smallint,
     content_id   bigint,
     comment      varchar,
-    created_at   timestamp,
-    updated_at   timestamp
+    created_at   timestamp default now(),
+    updated_at   timestamp default now()
 );
 comment on table public.t_comment is 'Комментарии к хранимому контенту';
 comment on column public.t_comment.content_type is 'К какому типу относится комментарий';
