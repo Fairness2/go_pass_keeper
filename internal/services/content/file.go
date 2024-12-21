@@ -98,7 +98,11 @@ func (s *FileService) getSaveFileBody(request *http.Request, userID int64) (*mod
 // Возвращает сохраненный путь к файлу или ошибку, если операция не удалась.
 func (s *FileService) saveFile(file io.Reader, userID int64) (string, error) {
 	newFileName := uuid.New().String()
-	filePath := fmt.Sprintf("%s/%d/%s", s.filePath, userID, newFileName)
+	dir := fmt.Sprintf("%s/%d", s.filePath, userID)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return "", err
+	}
+	filePath := fmt.Sprintf("%s/%s", dir, newFileName)
 	dest, err := os.Create(filePath)
 	if err != nil {
 		return "", err
@@ -108,7 +112,7 @@ func (s *FileService) saveFile(file io.Reader, userID int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filePath, nil
+	return newFileName, nil
 }
 
 // deleteFile удаляет файл из каталога определенного пользователя, создавая путь к файлу и вызывая os.Remove.
@@ -253,6 +257,59 @@ func (s *FileService) DeleteUserFile(response http.ResponseWriter, request *http
 
 	if err = repository.DeleteFileByUserIDAndID(user.ID, id); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
+		return
+	}
+}
+
+func (s *FileService) DownloadFileHandler(response http.ResponseWriter, request *http.Request) {
+	// Берём авторизованного пользователя
+	user, ok := request.Context().Value(token.UserKey).(*models.User)
+	if !ok {
+		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		return
+	}
+	strID := chi.URLParam(request, "id")
+	id, err := strconv.ParseInt(strID, 10, 64)
+	if err != nil {
+		helpers.ProcessResponseWithStatus("File ID is not correct", http.StatusBadRequest, response)
+		return
+	}
+	repository := repositories.NewFileRepository(request.Context(), s.dbPool)
+	file, err := repository.GetFileByUserIDAndId(user.ID, id)
+	if err != nil {
+		if errors.Is(err, repositories.ErrNotExist) {
+			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
+			return
+		} else {
+			helpers.SetInternalError(err, response)
+			return
+		}
+	}
+	filePath := fmt.Sprintf("%s/%d/%s", s.filePath, user.ID, file.FilePath)
+	fileContent, err := os.Open(filePath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
+			return
+		}
+		helpers.SetInternalError(err, response)
+		return
+	}
+	fileStat, err := fileContent.Stat()
+	if err != nil {
+		helpers.SetInternalError(err, response)
+	}
+	response.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", file.FilePath))
+	response.Header().Set("Content-Type", "application/octet-stream")
+	response.Header().Set("Content-Length", fmt.Sprintf("%d", fileStat.Size()))
+	response.Header().Set("Content-Transfer-Encoding", "binary")
+	response.Header().Set("Last-Modified", fileStat.ModTime().Format(http.TimeFormat))
+	response.Header().Set("Accept-Ranges", "bytes")
+	response.WriteHeader(http.StatusOK)
+
+	// Write the file to the response
+	if _, err = io.Copy(response, fileContent); err != nil {
+		helpers.SetInternalError(err, response)
 		return
 	}
 }

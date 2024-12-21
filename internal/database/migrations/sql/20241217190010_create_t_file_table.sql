@@ -6,7 +6,7 @@ create table public.t_file
         constraint t_file_pk
             primary key,
     name       bytea,
-    create_at  timestamp default now(),
+    created_at  timestamp default now(),
     updated_at timestamp default now(),
     user_id    bigint
         constraint t_file_t_user_id_fk

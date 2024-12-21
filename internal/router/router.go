@@ -20,6 +20,7 @@ func NewRouter(dbPool *database.DBPool, cnf *config.CliConfig) chi.Router {
 	pHandlers := content.NewPasswordService(dbPool.DBx)
 	tHandlers := content.NewTextService(dbPool.DBx)
 	cHandlers := content.NewCardService(dbPool.DBx)
+	fHandlers := content.NewFileService(dbPool.DBx, "/Users/konstantinkuzminyh/sites/go_pass_keeper/upload")
 	authenticator := token.NewAuthenticator(dbPool.DBx, cnf.JWTKeys, cnf.TokenExpiration)
 
 	router := chi.NewRouter()
@@ -42,6 +43,7 @@ func NewRouter(dbPool *database.DBPool, cnf *config.CliConfig) chi.Router {
 		r.Group(registerPasswordRoutes(pHandlers, authenticator))
 		r.Group(registerTextRoutes(tHandlers, authenticator))
 		r.Group(registerCardRoutes(cHandlers, authenticator))
+		r.Group(registerFileRoutes(fHandlers, authenticator))
 	})
 
 	return router
@@ -77,5 +79,17 @@ func registerCardRoutes(pHandlers *content.CardService, authenticator *token.Aut
 		r.Put("/card", pHandlers.UpdateCardHandler)
 		r.Get("/card", pHandlers.GetUserCards)
 		r.Delete("/card/{id}", pHandlers.DeleteUserCard)
+	}
+}
+
+// registerFileRoutes маршруты с файлами
+func registerFileRoutes(pHandlers *content.FileService, authenticator *token.Authenticator) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(authenticator.Middleware)
+		r.Post("/file", pHandlers.SaveFileHandler)
+		r.Put("/file", pHandlers.UpdateFileHandler)
+		r.Get("/file", pHandlers.GetUserFiles)
+		r.Delete("/file/{id}", pHandlers.DeleteUserFile)
+		r.Get("/file/download/{id}", pHandlers.DownloadFileHandler)
 	}
 }

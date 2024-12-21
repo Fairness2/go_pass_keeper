@@ -27,3 +27,6 @@ vendor/
 # IDEs directories
 .idea
 .vscode
+
+upload/
+download/
