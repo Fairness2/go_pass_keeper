@@ -17,6 +17,8 @@ const (
 	DefaultHashKey = "dsbtyrew3!hgsdfvbytrd324"
 	// DefaultTokenExpiration Время жизни токена авторизации по умолчанию
 	DefaultTokenExpiration = 12 * time.Hour
+	// DefaultUploadPath Путь по умолчанию для сохранения файлов
+	DefaultUploadPath = "/uploads"
 )
 
 var (
@@ -59,4 +61,5 @@ type CliConfig struct {
 	JWTKeys           *Keys         `env:"-"`                // Ключи для JWT
 	EncryptKeys       *Keys         `env:"-"`                // Ключи для шифрования
 	TokenExpiration   time.Duration `env:"TOKEN_EXPIRATION"` // Время жизни токена авторизации
+	UploadPath        string        `env:"UPLOAD_PATH"`      // Путь сохранения файлов
 }

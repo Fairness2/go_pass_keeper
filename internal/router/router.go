@@ -20,7 +20,7 @@ func NewRouter(dbPool *database.DBPool, cnf *config.CliConfig) chi.Router {
 	pHandlers := content.NewPasswordService(dbPool.DBx)
 	tHandlers := content.NewTextService(dbPool.DBx)
 	cHandlers := content.NewCardService(dbPool.DBx)
-	fHandlers := content.NewFileService(dbPool.DBx, "/Users/konstantinkuzminyh/sites/go_pass_keeper/upload")
+	fHandlers := content.NewFileService(dbPool.DBx, cnf.UploadPath)
 	authenticator := token.NewAuthenticator(dbPool.DBx, cnf.JWTKeys, cnf.TokenExpiration)
 
 	router := chi.NewRouter()

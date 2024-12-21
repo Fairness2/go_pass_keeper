@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"passkeeper/internal/client/components"
+	"passkeeper/internal/client/config"
 	"passkeeper/internal/client/models"
 	"passkeeper/internal/client/models/menu"
 	"passkeeper/internal/client/service"
@@ -29,6 +30,7 @@ type Model struct {
 	modelError error
 	help       help.Model
 	helpKeys   []key.Binding
+	showInfo   bool
 }
 
 // InitialModel инициализирует новую модель с предопределенными полями ввода имени и пароля и назначает LoginService.
@@ -44,6 +46,7 @@ func InitialModel(service *service.LoginService) Model {
 			key.NewBinding(key.WithHelp("ctrl+c, esc", "Выход"), key.WithKeys("ctrl+c", "esc")),
 			key.NewBinding(key.WithHelp("tab, shift+tab, up, down", "Переход по форме"), key.WithKeys("tab", "shift+tab", "up", "down")),
 			key.NewBinding(key.WithHelp("enter", "Принять"), key.WithKeys("enter")),
+			key.NewBinding(key.WithHelp("f1", "Показать/скрыть информацию о клиенте"), key.WithKeys("f1")),
 		},
 	}
 	return m
@@ -70,6 +73,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.focusIndex = models.IncrementCircleIndex(m.focusIndex, len(m.inputs), s)
 			return m, m.getCmds()
+		case "f1":
+			m.showInfo = !m.showInfo
+			return m, nil
 		}
 	}
 	// Handle character input and blinking
@@ -112,6 +118,17 @@ func (m Model) View() string {
 	}
 	if m.modelError != nil {
 		fmt.Fprintf(&b, "\n%s\n", style.ErrorStyle.Render(m.modelError.Error()))
+	}
+
+	if m.showInfo {
+		fmt.Fprintf(&b, "\n%s\n%s\n%s\n%s\n%s\n%s\n",
+			style.BlurredStyle.Render("BuildDate: "+config.BuildDate),
+			style.BlurredStyle.Render("BuildCommit: "+config.BuildCommit),
+			style.BlurredStyle.Render("BuildVersion: "+config.BuildVersion),
+			style.BlurredStyle.Render("BuildOS: "+config.BuildOS),
+			style.BlurredStyle.Render("ServerAddress: "+config.ServerAddress),
+			style.BlurredStyle.Render("LogLevel: "+config.LogLevel),
+		)
 	}
 	button := &blurredButton
 	if m.focusIndex == len(m.inputs) {

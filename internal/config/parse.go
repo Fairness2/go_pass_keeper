@@ -106,6 +106,9 @@ func bindEnv() error {
 	if err := viper.BindEnv("TokenExpiration", "TOKEN_EXPIRATION"); err != nil {
 		return err
 	}
+	if err := viper.BindEnv("UploadPath", "UPLOAD_PATH"); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -120,6 +123,7 @@ func bindArg() error {
 	pflag.StringP("PrivateEncryptKey", "p", DefaultPrivateEncryptKey, "private encrypt key")
 	pflag.StringP("PublicEncryptKey", "u", DefaultPublicEncryptKey, "public encrypt key")
 	pflag.DurationP("TokenExpiration", "t", DefaultTokenExpiration, "token expiration time")
+	pflag.StringP("UploadPath", "w", DefaultUploadPath, "file upload path")
 	pflag.Parse()
 	return viper.BindPFlags(pflag.CommandLine)
 }
