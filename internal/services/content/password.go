@@ -14,6 +14,7 @@ import (
 	"passkeeper/internal/repositories"
 	"passkeeper/internal/token"
 	"strconv"
+	"time"
 )
 
 // PasswordService предоставляет методы для управления паролями пользователей и соответствующими комментариями в системе.
@@ -60,7 +61,7 @@ func (s *PasswordService) SavePasswordHandler(response http.ResponseWriter, requ
 		Comment:     body.Comment,
 	}
 	repository := repositories.NewPasswordRepository(request.Context(), s.dbPool)
-	if err = repository.Create(&pass, &comment); err != nil {
+	if err = repository.Create(pass, comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
@@ -104,21 +105,23 @@ func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, re
 		return
 	}
 	pass := models.PasswordContent{
-		ID:       body.ID,
-		UserID:   user.ID,
-		Domen:    body.Domen,
-		Username: body.Username,
-		Password: body.Password,
+		ID:        body.ID,
+		UserID:    user.ID,
+		Domen:     body.Domen,
+		Username:  body.Username,
+		Password:  body.Password,
+		UpdatedAt: time.Now(),
 	}
 	comment := models.Comment{
 		ContentType: models.TypePassword,
 		Comment:     body.Comment,
 		ContentID:   body.ID,
+		UpdatedAt:   time.Now(),
 	}
 	repository := repositories.NewPasswordRepository(request.Context(), s.dbPool)
 
 	// Проверяем есть ли такой пароль у пользователя
-	_, err = repository.GetPasswordsByUserIDAndId(pass.UserID, pass.ID)
+	_, err = repository.GetByUserIDAndId(pass.UserID, pass.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("Password not found", http.StatusNotFound, response)
@@ -129,7 +132,7 @@ func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, re
 		}
 	}
 	// Обновляем пароль
-	if err = repository.Create(&pass, &comment); err != nil {
+	if err = repository.Create(pass, comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
@@ -144,7 +147,7 @@ func (s *PasswordService) GetUserPasswords(response http.ResponseWriter, request
 		return
 	}
 	repository := repositories.NewPasswordRepository(request.Context(), s.dbPool)
-	passwords, err := repository.GetPasswordsByUserID(user.ID)
+	passwords, err := repository.GetByUserID(user.ID)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
@@ -187,7 +190,7 @@ func (s *PasswordService) DeleteUserPasswords(response http.ResponseWriter, requ
 		return
 	}
 	repository := repositories.NewPasswordRepository(request.Context(), s.dbPool)
-	if err = repository.DeletePasswordByUserIDAndID(user.ID, id); err != nil {
+	if err = repository.DeleteByUserIDAndID(user.ID, id); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
 		return
 	}

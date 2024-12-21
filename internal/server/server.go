@@ -7,6 +7,7 @@ import (
 	"passkeeper/internal/logger"
 )
 
+// Server представляет структуру для управления HTTP-сервером со связанным контекстом для управления.
 type Server struct {
 	S   *http.Server
 	ctx context.Context

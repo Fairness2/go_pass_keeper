@@ -14,6 +14,7 @@ import (
 	"passkeeper/internal/repositories"
 	"passkeeper/internal/token"
 	"strconv"
+	"time"
 )
 
 // TextService предоставляет методы для управления текстами пользователей и соответствующими комментариями в системе.
@@ -58,7 +59,7 @@ func (s *TextService) SaveTextHandler(response http.ResponseWriter, request *htt
 		Comment:     body.Comment,
 	}
 	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
-	if err = repository.Create(&pass, &comment); err != nil {
+	if err = repository.Create(pass, comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
@@ -102,19 +103,21 @@ func (s *TextService) UpdateTextHandler(response http.ResponseWriter, request *h
 		return
 	}
 	text := models.TextContent{
-		ID:       body.ID,
-		UserID:   user.ID,
-		TextData: body.TextData,
+		ID:        body.ID,
+		UserID:    user.ID,
+		TextData:  body.TextData,
+		UpdatedAt: time.Now(),
 	}
 	comment := models.Comment{
 		ContentType: models.TypeText,
 		Comment:     body.Comment,
 		ContentID:   body.ID,
+		UpdatedAt:   time.Now(),
 	}
 	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
 
 	// Проверяем есть ли такой пароль у пользователя
-	_, err = repository.GetTextByUserIDAndId(text.UserID, text.ID)
+	_, err = repository.GetByUserIDAndId(text.UserID, text.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("Text not found", http.StatusNotFound, response)
@@ -125,7 +128,7 @@ func (s *TextService) UpdateTextHandler(response http.ResponseWriter, request *h
 		}
 	}
 	// Обновляем пароль
-	if err = repository.Create(&text, &comment); err != nil {
+	if err = repository.Create(text, comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
@@ -140,7 +143,7 @@ func (s *TextService) GetUserTexts(response http.ResponseWriter, request *http.R
 		return
 	}
 	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
-	texts, err := repository.GetTextsByUserID(user.ID)
+	texts, err := repository.GetByUserID(user.ID)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
@@ -181,7 +184,7 @@ func (s *TextService) DeleteUserText(response http.ResponseWriter, request *http
 		return
 	}
 	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
-	if err = repository.DeleteTextByUserIDAndID(user.ID, id); err != nil {
+	if err = repository.DeleteByUserIDAndID(user.ID, id); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
 		return
 	}

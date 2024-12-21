@@ -8,43 +8,34 @@ import (
 	"passkeeper/internal/models"
 )
 
+// SQLSet представляет собой набор SQL-запросов для управления содержимым и соответствующими комментариями в базе данных.
 type SQLSet struct {
-	CreateContent              string
-	CreateComment              string
-	UpdateContent              string
-	UpdateComment              string
-	GetContentByUserID         string
-	GetContentByUserIDAndID    string
-	DeleteContentByUserIDAndID string
-	DeleteCommentByContentID   string
+	CreateContent              string // SQL-запрос для создания записи контента.
+	CreateComment              string // SQL-запрос для создания записи комментария, связанной с контентом.
+	UpdateContent              string // SQL-запрос для обновления определенной записи контента.
+	UpdateComment              string // SQL для обновления записи комментария для определенного контента.
+	GetContentByUserID         string // SQL-запрос для получения нескольких записей контента по идентификатору пользователя.
+	GetContentByUserIDAndID    string // SQL-запрос для получения определенной записи контента по идентификатору пользователя и идентификатору контента.
+	DeleteContentByUserIDAndID string // SQL-запрос для удаления определенной записи контента по идентификатору пользователя и идентификатору контента.
+	DeleteCommentByContentID   string // SQL-запрос для удаления комментариев, связанных с определенным контентом.
 }
 
+// Contentable представляет сущность, которая предоставляет уникальный идентификатор с помощью метода GetID.
 type Contentable interface {
 	GetID() int64
-	SetID(int64)
 }
 
 // CrudRepository представляет собой хранилище для управления контентными сущностями и связанными с ними комментариями в базе данных.
 // Он использует пул соединений с базой данных SQL и контекст для обработки запросов.
-type CrudRepository struct {
-	// db пул соединений с базой данных, которыми может пользоваться хранилище
-	db *sqlx.DB
-	// storeCtx контекст, который отвечает за запросы
-	ctx    context.Context
-	sqlSet SQLSet
-}
-
-// NewCrudRepository создает и возвращает новый экземпляр FileRepository с предоставленным контекстом и SQLExecutor.
-func NewCrudRepository(ctx context.Context, db SQLExecutor, sqlSet SQLSet) *CrudRepository {
-	return &CrudRepository{
-		db:     db.(*sqlx.DB),
-		ctx:    ctx,
-		sqlSet: sqlSet,
-	}
+type CrudRepository[T Contentable, Y Contentable] struct {
+	db          *sqlx.DB           // Пул соединений с базой данных, которыми может пользоваться хранилище
+	ctx         context.Context    // Контекст, который отвечает за запросы
+	sqlSet      SQLSet             // Набор SQL запросов для контента
+	typeContent models.ContentType // Тип контента
 }
 
 // Create вставляет или обновляет контент вместе с соответствующим комментарием в транзакции базы данных.
-func (pr *CrudRepository) Create(content Contentable, comment *models.Comment) error {
+func (pr *CrudRepository[T, Y]) Create(content T, comment models.Comment) error {
 	tx, err := pr.db.BeginTxx(pr.ctx, nil)
 	if err != nil {
 		return err
@@ -62,11 +53,12 @@ func (pr *CrudRepository) Create(content Contentable, comment *models.Comment) e
 }
 
 // createWithComment вставляет новый контент и связанный с ним комментарий в базу данных внутри транзакции.
-func (pr *CrudRepository) createWithComment(tx *sqlx.Tx, content Contentable, comment *models.Comment) error {
+func (pr *CrudRepository[T, Y]) createWithComment(tx *sqlx.Tx, content T, comment models.Comment) error {
 	smth, err := tx.PrepareNamed(pr.sqlSet.CreateContent)
 	if err != nil {
 		return err
 	}
+
 	row := smth.QueryRowxContext(pr.ctx, content)
 	var id int64
 	if err := row.Scan(&id); err != nil {
@@ -78,8 +70,8 @@ func (pr *CrudRepository) createWithComment(tx *sqlx.Tx, content Contentable, co
 	return err
 }
 
-// updateWithComment обновляет информацию о файле и связанный с ним комментарий в базе данных в рамках транзакции.
-func (pr *CrudRepository) updateWithComment(tx *sqlx.Tx, content Contentable, comment *models.Comment) error {
+// updateWithComment обновляет информацию о контенте и связанный с ним комментарий в базе данных в рамках транзакции.
+func (pr *CrudRepository[T, Y]) updateWithComment(tx *sqlx.Tx, content T, comment models.Comment) error {
 	_, err := tx.NamedExecContext(pr.ctx, pr.sqlSet.UpdateContent, content)
 	if err != nil {
 		return err
@@ -89,32 +81,34 @@ func (pr *CrudRepository) updateWithComment(tx *sqlx.Tx, content Contentable, co
 	return err
 }
 
-// GetByUserID извлекает все информации офайлах, связанные с указанным идентификатором пользователя, включая их комментарии. Возвращает список или ошибку.
-func (pr *CrudRepository) GetByUserID(userID int64, result *[]Contentable, typeContent models.ContentType) error {
-	err := pr.db.SelectContext(pr.ctx, result, pr.sqlSet.GetContentByUserID, typeContent, userID)
-	return err
+// GetByUserID извлекает все информации о контенте, связанные с указанным идентификатором пользователя, включая их комментарии. Возвращает список или ошибку.
+func (pr *CrudRepository[T, Y]) GetByUserID(userID int64) ([]Y, error) {
+	var result []Y
+	err := pr.db.SelectContext(pr.ctx, &result, pr.sqlSet.GetContentByUserID, pr.typeContent, userID)
+	return result, err
 }
 
-// GetByUserIDAndId извлекает информацию о файле по его идентификатору и идентификатору связанного пользователя. Возвращает текст или ошибку.
-func (pr *CrudRepository) GetByUserIDAndId(userID int64, id int64, result *Contentable) error {
+// GetByUserIDAndId извлекает информацию о контенте по его идентификатору и идентификатору связанного пользователя. Возвращает текст или ошибку.
+func (pr *CrudRepository[T, Y]) GetByUserIDAndId(userID int64, id int64) (*T, error) {
 	row := pr.db.QueryRowxContext(pr.ctx, pr.sqlSet.GetContentByUserIDAndID, id, userID)
 	err := row.Err()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err = row.StructScan(result); err != nil {
+	var result T
+	if err = row.StructScan(&result); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return errors.Join(ErrNotExist, err)
+			return nil, errors.Join(ErrNotExist, err)
 		}
-		return err
+		return nil, err
 	}
-	return err
+	return &result, nil
 }
 
-// DeleteByUserIDAndID удаляет информацию о файле и связанные с ним комментарии для данного идентификатора пользователя и идентификатора текста.
+// DeleteByUserIDAndID удаляет информацию о контенте и связанные с ним комментарии для данного идентификатора пользователя и идентификатора текста.
 // Он выполняет два запроса на удаление в рамках транзакции базы данных.
 // Возвращает ошибку, если транзакция или запросы завершаются неудачно.
-func (pr *CrudRepository) DeleteByUserIDAndID(userID int64, id int64, typeContent models.ContentType) error {
+func (pr *CrudRepository[T, Y]) DeleteByUserIDAndID(userID int64, id int64) error {
 	tx, err := pr.db.BeginTxx(pr.ctx, nil)
 	if err != nil {
 		return err
@@ -124,7 +118,7 @@ func (pr *CrudRepository) DeleteByUserIDAndID(userID int64, id int64, typeConten
 	if err != nil {
 		return err
 	}
-	_, err = tx.ExecContext(pr.ctx, pr.sqlSet.DeleteCommentByContentID, typeContent, id)
+	_, err = tx.ExecContext(pr.ctx, pr.sqlSet.DeleteCommentByContentID, pr.typeContent, id)
 	if err != nil {
 		return err
 	}

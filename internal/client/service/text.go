@@ -70,11 +70,9 @@ func (s *TextService) GetTexts() ([]TextData, error) {
 
 func (s *TextService) EncryptText(body *payloads.TextWithComment) (*payloads.TextWithComment, error) {
 	ch := cipher.NewCipher([]byte(s.user.Password))
-	eText, err := ch.Encrypt(body.TextData)
-	if err != nil {
+	if err := body.Encrypt(ch); err != nil {
 		return body, err
 	}
-	body.TextData = eText
 	return body, nil
 }
 
@@ -82,11 +80,9 @@ func (s *TextService) DecryptTexts(texts []payloads.TextWithComment) ([]TextData
 	ch := cipher.NewCipher([]byte(s.user.Password))
 	dTexts := make([]TextData, len(texts))
 	for i, text := range texts {
-		dText, err := ch.Decrypt(text.TextData)
-		if err != nil {
+		if err := text.Decrypt(ch); err != nil {
 			return nil, err
 		}
-		text.TextData = dText
 		dTexts[i] = TextData{
 			TextWithComment: text,
 			IsDecrypted:     true,

@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// TextContent представляет запись текстового контента, включая метаданные, такие как ассоциация пользователя и временные метки.
 type TextContent struct {
 	ID        int64     `db:"id"`
 	UserID    int64     `db:"user_id"`
@@ -12,6 +13,12 @@ type TextContent struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+// GetID возвращает уникальный идентификатор (ID) экземпляра TextContent.
+func (p TextContent) GetID() int64 {
+	return p.ID
+}
+
+// TextWithComment представляет запись текстового содержимого вместе со связанным с ней комментарием. Он расширяет тип TextContent.
 type TextWithComment struct {
 	TextContent
 	Comment string `db:"comment"`

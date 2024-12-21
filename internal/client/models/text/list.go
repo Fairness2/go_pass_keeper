@@ -22,7 +22,7 @@ var (
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка паролей.
 type List struct {
 	list       list.Model
-	pService   *service.TextService
+	pService   *service.CRUDService[*payloads.TextWithComment, service.TextData]
 	modelError error
 	selected   *service.TextData
 	help       help.Model
@@ -31,7 +31,7 @@ type List struct {
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.TextService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(textService *service.TextService) List {
+func NewList(textService *service.CRUDService[*payloads.TextWithComment, service.TextData]) List {
 	m := List{
 		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
 		pService: textService,
@@ -122,7 +122,7 @@ func (m List) updateText() (tea.Model, tea.Cmd) {
 // Если во время удаления или обновления возникает ошибка, устанавливается modelError и не выдается команда.
 func (m List) deleteText() (tea.Model, tea.Cmd) {
 	selected := m.list.SelectedItem().(service.TextData)
-	err := m.pService.DeleteText(selected.ID)
+	err := m.pService.Delete(selected.ID)
 	if err != nil {
 		m.modelError = err
 		return m, nil
@@ -164,7 +164,7 @@ func (m List) View() string {
 
 // refresh обновить обновляет список, получая тексты из TextService и устанавливая их как элементы списка.
 func (l *List) refresh() error {
-	texts, err := l.pService.GetTexts()
+	texts, err := l.pService.Get()
 	if err != nil {
 		return err
 	}

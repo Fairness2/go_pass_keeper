@@ -17,6 +17,7 @@ import (
 	"passkeeper/internal/repositories"
 	"passkeeper/internal/token"
 	"strconv"
+	"time"
 )
 
 var (
@@ -62,24 +63,25 @@ func (s *FileService) SaveFileHandler(response http.ResponseWriter, request *htt
 }
 
 // getSaveFileBody анализирует и проверяет тело HTTP-запроса для извлечения полезных данных или возвращает ошибку.
-func (s *FileService) getSaveFileBody(request *http.Request, userID int64) (*models.FileContent, *models.Comment, error) {
+func (s *FileService) getSaveFileBody(request *http.Request, userID int64) (models.FileContent, models.Comment, error) {
+
 	err := request.ParseMultipartForm(10 << 20)
 	if err != nil {
-		return nil, nil, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
+		return models.FileContent{}, models.Comment{}, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
 	}
 	file, _, err := request.FormFile("file")
 	if err != nil {
-		return nil, nil, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
+		return models.FileContent{}, models.Comment{}, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
 	}
 	defer file.Close()
 	fileName := request.PostFormValue("name")
 	if fileName == "" {
-		return nil, nil, &commonerrors.RequestError{InternalError: errors.New("name is empty"), HTTPStatus: http.StatusBadRequest}
+		return models.FileContent{}, models.Comment{}, &commonerrors.RequestError{InternalError: errors.New("name is empty"), HTTPStatus: http.StatusBadRequest}
 	}
 
 	filePath, err := s.saveFile(file, userID)
 	if err != nil {
-		return nil, nil, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusInternalServerError}
+		return models.FileContent{}, models.Comment{}, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusInternalServerError}
 	}
 
 	fileBody := models.FileContent{
@@ -91,7 +93,7 @@ func (s *FileService) getSaveFileBody(request *http.Request, userID int64) (*mod
 		ContentType: models.TypeFile,
 		Comment:     request.PostFormValue("comment"),
 	}
-	return &fileBody, &comment, nil
+	return fileBody, comment, nil
 }
 
 // saveFile сохраняет содержимое данного файла на диск под уникальным именем в заданном пользователем каталоге.
@@ -146,19 +148,21 @@ func (s *FileService) UpdateFileHandler(response http.ResponseWriter, request *h
 		return
 	}
 	info := models.FileContent{
-		ID:     body.ID,
-		UserID: user.ID,
-		Name:   body.Name,
+		ID:        body.ID,
+		UserID:    user.ID,
+		Name:      body.Name,
+		UpdatedAt: time.Now(),
 	}
 	comment := models.Comment{
 		ContentType: models.TypeFile,
 		Comment:     body.Comment,
 		ContentID:   body.ID,
+		UpdatedAt:   time.Now(),
 	}
 	repository := repositories.NewFileRepository(request.Context(), s.dbPool)
 
 	// Проверяем есть ли такой пароль у пользователя
-	_, err = repository.GetFileByUserIDAndId(user.ID, info.ID)
+	_, err = repository.GetByUserIDAndId(user.ID, info.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
@@ -169,7 +173,7 @@ func (s *FileService) UpdateFileHandler(response http.ResponseWriter, request *h
 		}
 	}
 	// Обновляем пароль
-	if err = repository.Create(&info, &comment); err != nil {
+	if err = repository.Create(info, comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
@@ -201,7 +205,7 @@ func (s *FileService) GetUserFiles(response http.ResponseWriter, request *http.R
 		return
 	}
 	repository := repositories.NewFileRepository(request.Context(), s.dbPool)
-	files, err := repository.GetFilesByUserID(user.ID)
+	files, err := repository.GetByUserID(user.ID)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
@@ -240,7 +244,7 @@ func (s *FileService) DeleteUserFile(response http.ResponseWriter, request *http
 		return
 	}
 	repository := repositories.NewFileRepository(request.Context(), s.dbPool)
-	file, err := repository.GetFileByUserIDAndId(user.ID, id)
+	file, err := repository.GetByUserIDAndId(user.ID, id)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
@@ -255,7 +259,7 @@ func (s *FileService) DeleteUserFile(response http.ResponseWriter, request *http
 		return
 	}
 
-	if err = repository.DeleteFileByUserIDAndID(user.ID, id); err != nil {
+	if err = repository.DeleteByUserIDAndID(user.ID, id); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
 		return
 	}
@@ -275,7 +279,7 @@ func (s *FileService) DownloadFileHandler(response http.ResponseWriter, request 
 		return
 	}
 	repository := repositories.NewFileRepository(request.Context(), s.dbPool)
-	file, err := repository.GetFileByUserIDAndId(user.ID, id)
+	file, err := repository.GetByUserIDAndId(user.ID, id)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)

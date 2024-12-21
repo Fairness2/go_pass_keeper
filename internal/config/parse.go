@@ -21,12 +21,6 @@ func NewConfig() (*CliConfig, error) {
 		return nil, err
 	}
 	cnf.JWTKeys = jwtKeys
-	// Парсим ключи для шифрования
-	enKeys, err := parseKeys(cnf.PrivateEncryptKey, cnf.PublicEncryptKey)
-	if err != nil {
-		return nil, err
-	}
-	cnf.EncryptKeys = enKeys
 
 	return cnf, nil
 }
@@ -97,12 +91,6 @@ func bindEnv() error {
 	if err := viper.BindEnv("PublicJWTKey", "JPUKEY"); err != nil {
 		return err
 	}
-	if err := viper.BindEnv("PrivateEncryptKey", "EPKEY"); err != nil {
-		return err
-	}
-	if err := viper.BindEnv("PublicEncryptKey", "EPUKEY"); err != nil {
-		return err
-	}
 	if err := viper.BindEnv("TokenExpiration", "TOKEN_EXPIRATION"); err != nil {
 		return err
 	}
@@ -120,8 +108,6 @@ func bindArg() error {
 	pflag.StringP("HashKey", "h", DefaultHashKey, "encrypted key")
 	pflag.StringP("PrivateJWTKey", "r", DefaultPrivateJWTKey, "private jwt key")
 	pflag.StringP("PublicJWTKey", "b", DefaultPublicJWTKey, "public jwt key")
-	pflag.StringP("PrivateEncryptKey", "p", DefaultPrivateEncryptKey, "private encrypt key")
-	pflag.StringP("PublicEncryptKey", "u", DefaultPublicEncryptKey, "public encrypt key")
 	pflag.DurationP("TokenExpiration", "t", DefaultTokenExpiration, "token expiration time")
 	pflag.StringP("UploadPath", "w", DefaultUploadPath, "file upload path")
 	pflag.Parse()

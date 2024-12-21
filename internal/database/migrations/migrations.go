@@ -9,6 +9,8 @@ import (
 //go:embed sql/*.sql
 var embedMigrations embed.FS
 
+// Migrate применяет миграцию базы данных с использованием встроенных файлов миграции и диалекта PostgreSQL.
+// Принимает соединение с базой данных (*sql.DB) в качестве входных данных и возвращает ошибку, если миграция не удалась.
 func Migrate(db *sql.DB) error {
 	goose.SetBaseFS(embedMigrations)
 

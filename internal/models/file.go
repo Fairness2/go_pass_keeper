@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// FileContent представляет метаданные и важную информацию о файле, хранящемся в базе данных.
 type FileContent struct {
 	ID        int64     `db:"id"`
 	UserID    int64     `db:"user_id"`
@@ -13,6 +14,12 @@ type FileContent struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
+// GetID возвращает идентификатор (ID) объекта FileContent.
+func (p FileContent) GetID() int64 {
+	return p.ID
+}
+
+// FileWithComment — это структура, представляющая метаданные файла вместе со связанным комментарием, хранящимся в базе данных.
 type FileWithComment struct {
 	FileContent
 	Comment string `db:"comment"`

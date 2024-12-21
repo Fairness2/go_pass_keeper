@@ -19,6 +19,9 @@ type DBPool struct {
 	DBx *sqlx.DB
 }
 
+// newPgDBx инициализирует новый пул соединений PostgreSQL, используя заданный DSN, максимальное количество открытых соединений и максимальное количество простаивающих соединений.
+// Он проверяет соединение с базой данных во время инициализации, выполняя операцию Ping.
+// Возвращает объект *sqlx.DB в случае успеха или ошибки, если соединение или проверка не удались.
 func newPgDBx(dsn string, maxConnections int, maxIdleConnections int) (*sqlx.DB, error) {
 	db, err := sqlx.Open("pgx", dsn)
 	if err != nil {

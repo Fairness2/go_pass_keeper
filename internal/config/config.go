@@ -37,29 +37,15 @@ type Keys struct {
 	Private *rsa.PrivateKey
 }
 
-var (
-	// DefaultPrivateEncryptKey Текстовое представление приватного ключа для шифрования контента по умолчанию
-	//
-	//go:embed keys/encrypt/private.pem
-	DefaultPrivateEncryptKey string
-	// DefaultPublicEncryptKey Текстовое представление публичного ключа для шифрования контента по умолчанию
-	//
-	//go:embed keys/encrypt/public.pem
-	DefaultPublicEncryptKey string
-)
-
 // CliConfig конфигурация сервера из командной строки
 type CliConfig struct {
-	Address           string        `env:"RUN_ADDRESS"`      // адрес сервера
-	LogLevel          string        `env:"LOG_LEVEL"`        // Уровень логирования
-	DatabaseDSN       string        `env:"DATABASE_URI"`     // подключение к базе данных
-	HashKey           string        `env:"KEY"`              // Ключ для шифрования
-	PrivateJWTKey     string        `env:"JPKEY"`            // Приватный ключ для JWT
-	PublicJWTKey      string        `env:"JPUKEY"`           // Публичный ключ для JWT
-	PrivateEncryptKey string        `env:"EPKEY"`            // Приватный ключ для шифрования
-	PublicEncryptKey  string        `env:"EPUKEY"`           // Публичный ключ для шифрования
-	JWTKeys           *Keys         `env:"-"`                // Ключи для JWT
-	EncryptKeys       *Keys         `env:"-"`                // Ключи для шифрования
-	TokenExpiration   time.Duration `env:"TOKEN_EXPIRATION"` // Время жизни токена авторизации
-	UploadPath        string        `env:"UPLOAD_PATH"`      // Путь сохранения файлов
+	Address         string        `env:"RUN_ADDRESS"`      // адрес сервера
+	LogLevel        string        `env:"LOG_LEVEL"`        // Уровень логирования
+	DatabaseDSN     string        `env:"DATABASE_URI"`     // подключение к базе данных
+	HashKey         string        `env:"KEY"`              // Ключ для шифрования
+	PrivateJWTKey   string        `env:"JPKEY"`            // Приватный ключ для JWT
+	PublicJWTKey    string        `env:"JPUKEY"`           // Публичный ключ для JWT
+	JWTKeys         *Keys         `env:"-"`                // Ключи для JWT
+	TokenExpiration time.Duration `env:"TOKEN_EXPIRATION"` // Время жизни токена авторизации
+	UploadPath      string        `env:"UPLOAD_PATH"`      // Путь сохранения файлов
 }

@@ -86,7 +86,7 @@ func (m Model) nextView() (tea.Model, tea.Cmd) {
 		l := password.NewList(service.NewPasswordService(serverclient.Inst, user.CurrentUser))
 		return l, l.Init()
 	case 1:
-		l := text.NewList(service.NewTextService(serverclient.Inst, user.CurrentUser))
+		l := text.NewList(service.NewCRUDTextService(serverclient.Inst, user.CurrentUser))
 		return l, l.Init()
 	case 2:
 		l := file.NewList(service.NewFileService(serverclient.Inst, user.CurrentUser))
