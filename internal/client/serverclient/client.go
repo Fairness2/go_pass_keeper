@@ -5,10 +5,13 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
+// ErrEmptyBaseURL возвращается, когда предоставленный базовый URL-адрес для инициализации клиента пуст.
 var ErrEmptyBaseURL = errors.New("empty base url")
 
+// Inst — это глобально доступный экземпляр Клиента, обычно используемый для взаимодействия с сервером.
 var Inst *Client
 
+// Client представляет клиент Resty со связанными токенами аутентификации для взаимодействия с API.
 type Client struct {
 	Client       *resty.Client
 	Token        string
@@ -25,6 +28,7 @@ func NewClient(baseURL string) (*Client, error) {
 	return &Client{Client: c}, nil
 }
 
+// SetTokens устанавливает токен доступа и токен обновления для экземпляра клиента.
 func (c *Client) SetTokens(token, refreshToken string) {
 	c.Token = token
 	c.RefreshToken = refreshToken

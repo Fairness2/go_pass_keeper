@@ -6,8 +6,9 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"os"
+	"passkeeper/internal/client/components"
+	"passkeeper/internal/client/models"
 	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
 	"passkeeper/internal/payloads"
@@ -15,32 +16,44 @@ import (
 )
 
 var (
-	docStyle           = lipgloss.NewStyle()
 	headerText         = style.HeaderStyle.Render("Список файлов")
 	selectedHeaderText = style.HeaderStyle.Render("Файл")
+	filePathHeaderText = style.HeaderStyle.Render("путь для загрузки")
 )
 
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка файлов.
 type List struct {
-	list       list.Model
-	pService   *service.FileService
-	modelError error
-	selected   *service.FileData
-	help       help.Model
-	helpKeys   []key.Binding
+	list         list.Model
+	pService     *service.FileService
+	modelError   error
+	selected     *service.FileData
+	help         help.Model
+	helpKeys     []key.Binding
+	helpPathKeys []key.Binding
+	downloadPath string
+	showPathForm bool
+	pathInput    []components.BlinkInput
+	focusIndex   int
 }
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.CardService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
 func NewList(fileService *service.FileService) List {
+	initialDownloadPath := os.Getenv("HOME") + "/Downloads"
 	m := List{
 		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
 		pService: fileService,
 		help:     help.New(),
 		helpKeys: []key.Binding{
-			key.NewBinding(key.WithHelp("esc, backspace", "Выход"), key.WithKeys("backspace", "esc")),
+			key.NewBinding(key.WithHelp("esc, backspace", "Назад"), key.WithKeys("backspace", "esc")),
 			key.NewBinding(key.WithHelp("z", "Загрузить файл"), key.WithKeys("z")),
+			key.NewBinding(key.WithHelp("p", "Изменить путь загрузки"), key.WithKeys("p")),
 		},
+		helpPathKeys: []key.Binding{
+			key.NewBinding(key.WithHelp("esc, backspace", "Назад"), key.WithKeys("backspace", "esc")),
+		},
+		downloadPath: initialDownloadPath,
+		pathInput:    []components.BlinkInput{components.NewTInput("Путь загрузки", initialDownloadPath, true)},
 	}
 	m.list.SetShowTitle(false)
 	m.list.AdditionalShortHelpKeys = func() []key.Binding {
@@ -49,6 +62,7 @@ func NewList(fileService *service.FileService) List {
 			key.NewBinding(key.WithHelp("u", "Обновить файл"), key.WithKeys("u")),
 			key.NewBinding(key.WithHelp("d", "Удалить файл"), key.WithKeys("d")),
 			key.NewBinding(key.WithHelp("z", "Загрузить файл"), key.WithKeys("z")),
+			key.NewBinding(key.WithHelp("p", "Изменить путь загрузки"), key.WithKeys("p")),
 		}
 		return binds
 	}
@@ -66,6 +80,9 @@ func (m List) Init() tea.Cmd {
 
 // Update обновляет модель на основе предоставленного сообщения и возвращает обновленную модель и необязательную команду.
 func (m List) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.showPathForm {
+		return m.pathUpdate(msg)
+	}
 	if m.selected != nil {
 		return m.updateWhileSelected(msg)
 	}
@@ -89,9 +106,12 @@ func (m List) updateWhileNotSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.deleteFile()
 		case "z":
 			return m.downloadFile()
+		case "p":
+			m.showPathForm = !m.showPathForm
+			return m, nil
 		}
 	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
+		h, v := style.DocStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
 	}
 
@@ -149,6 +169,9 @@ func (m List) updateWhileSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "z":
 			return m.downloadFile()
+		case "p":
+			m.showPathForm = !m.showPathForm
+			return m, nil
 		}
 	}
 
@@ -157,6 +180,9 @@ func (m List) updateWhileSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View генерирует и возвращает форматированное строковое представление списка, включая любой выбранный элемент или сообщение об ошибке.
 func (m List) View() string {
+	if m.showPathForm {
+		return m.renderPath()
+	}
 	if m.selected != nil {
 		return m.renderSelected()
 	}
@@ -198,6 +224,7 @@ func (l List) renderSelected() string {
 	return b.String()
 }
 
+// downloadFile загружает выбранный файл, расшифровывает его и сохраняет по указанному пути загрузки, обрабатывая ошибки, если таковые имеются.
 func (l List) downloadFile() (tea.Model, tea.Cmd) {
 	selected := l.list.SelectedItem().(service.FileData)
 	temp, err := os.CreateTemp(os.TempDir(), "file-*.zip")
@@ -209,7 +236,7 @@ func (l List) downloadFile() (tea.Model, tea.Cmd) {
 		temp.Close()
 		os.Remove(temp.Name())
 	}()
-	destFile, err := os.Create(fmt.Sprintf("%s/%s", "/Users/konstantinkuzminyh/sites/go_pass_keeper/download", string(selected.Name))) // TODO
+	destFile, err := os.Create(fmt.Sprintf("%s/%s", l.downloadPath, string(selected.Name))) // TODO
 	if err != nil {
 		l.modelError = err
 		return l, nil
@@ -226,4 +253,78 @@ func (l List) downloadFile() (tea.Model, tea.Cmd) {
 	}
 
 	return l, nil
+}
+
+// renderSelected генерирует и возвращает форматированное строковое представление заполнения пути загрузки.
+func (l List) renderPath() string {
+	var b strings.Builder
+	b.WriteString(filePathHeaderText)
+	b.WriteString("\n")
+	for _, i := range l.pathInput {
+		b.WriteString(i.View())
+		b.WriteString("\n")
+	}
+	button := &blurredButton
+	if l.focusIndex == len(l.pathInput) {
+		button = &focusedButton
+	}
+	fmt.Fprintf(&b, "%s\n\n", *button)
+	b.WriteString(l.help.ShortHelpView(l.helpPathKeys))
+	return b.String()
+}
+
+// pathUpdate обрабатывает сообщения для обновления состояния списка при заполнении пути загрузки, управляет фокусом и обрабатывает ввод для формы.
+func (l List) pathUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "esc":
+			return l, tea.Quit
+		// Set focus to next input
+		case "tab", "shift+tab", "enter", "up", "down":
+			s := msg.String()
+			if s == "enter" && l.focusIndex == len(l.pathInput) {
+				l.downloadPath = l.pathInput[0].Value()
+				l.showPathForm = false
+				return l, nil
+			}
+			// На комментарии нужно разрешать делать новую строку
+			if s == "enter" && l.focusIndex == len(l.pathInput)-1 {
+				break
+			}
+			l.focusIndex = models.IncrementCircleIndex(l.focusIndex, len(l.pathInput), s)
+
+			return l, l.getCmds()
+		}
+	}
+	// Handle character input and blinking
+	cmd := l.updateInputs(msg)
+	return l, cmd
+}
+
+// getCmds генерирует пакетную команду для обновления состояния фокуса входных данных формы на основе текущего индекса фокуса.
+func (l List) getCmds() tea.Cmd {
+	cmds := make([]tea.Cmd, len(l.pathInput))
+	for i, input := range l.pathInput {
+		if l.focusIndex == i {
+			cmds[i] = input.Focus()
+		} else {
+			input.Blur()
+		}
+	}
+	return tea.Batch(cmds...)
+}
+
+// updateInputs обновляет все входные компоненты в форме на основе предоставленного сообщения и возвращает пакетную команду для обновлений.
+func (l *List) updateInputs(msg tea.Msg) tea.Cmd {
+	cmds := make([]tea.Cmd, len(l.pathInput))
+	for i, input := range l.pathInput {
+		switch r := input.(type) {
+		case *components.TInput:
+			l.pathInput[i], cmds[i] = r.Update(msg)
+		case *components.TArea:
+			l.pathInput[i], cmds[i] = r.Update(msg)
+		}
+	}
+	return tea.Batch(cmds...)
 }

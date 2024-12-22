@@ -34,19 +34,14 @@ type Form struct {
 
 // InitialForm инициализирует и возвращает форму с предопределенными полями ввода и привязками помощи по навигации с помощью клавиатуры.
 func InitialForm(service *service.CRUDService[*payloads.PasswordWithComment, service.PassData], data *payloads.PasswordWithComment) Form {
-	lgn := components.NewTInput("Логин", string(data.Username), true)
-	domen := components.NewTInput("Домен", data.Domen, false)
-	pass := components.NewTInput("Пароль", string(data.Password.Password), false)
-	comment := components.NewTArea("Comment", data.Comment, false)
-
 	m := Form{
 		pService: service,
 		data:     data,
 		inputs: []components.BlinkInput{
-			lgn,
-			pass,
-			domen,
-			comment,
+			components.NewTInput("Логин", string(data.Username), true),
+			components.NewTInput("Пароль", string(data.Password.Password), false),
+			components.NewTInput("Домен", data.Domen, false),
+			components.NewTArea("Comment", data.Comment, false),
 		},
 		help: help.New(),
 		helpKeys: []key.Binding{

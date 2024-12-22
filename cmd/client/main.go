@@ -13,8 +13,6 @@ import (
 
 func main() {
 	var err error
-	//bildStr := fmt.Sprintf("BuildDate: %s\nBuildCommit: %s\nBuildVersion: %s\nBuildOS: %s\nServerAddress: %s\nLogLevel: %s\n", config.BuildDate, config.BuildCommit, config.BuildVersion, config.BuildOS, config.ServerAddress, config.LogLevel)
-	//fmt.Println(bildStr)
 	serverclient.Inst, err = serverclient.NewClient(config.ServerAddress)
 	if err != nil {
 		log.Fatal(err)

@@ -30,6 +30,9 @@ func (i TextData) Title() string {
 func (i TextData) Description() string { return i.Comment }
 func (i TextData) FilterValue() string { return string(i.TextData) }
 
+// NewCRUDTextService создает новую службу CRUD для управления объектами TextWithComment.
+// Он использует предоставленный серверный клиент и пользователя для запросов API.
+// Служба включает в себя логику обработки и дешифрования текста для сущностей.
 func NewCRUDTextService(client *serverclient.Client, user *user.User) *CRUDService[*payloads.TextWithComment, TextData] {
 	return &CRUDService[*payloads.TextWithComment, TextData]{
 		client: client,

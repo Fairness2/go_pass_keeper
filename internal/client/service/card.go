@@ -25,6 +25,8 @@ func (i CardData) Title() string {
 func (i CardData) Description() string { return i.Comment }
 func (i CardData) FilterValue() string { return string(i.Number) }
 
+// NewCRUDCardService инициализирует CRUDService для управления данными карты с параметрами аутентификации сервера-клиента и пользователя.
+// Возвращает CRUDService, настроенный для обработки полезных данных CardWithComment и преобразованный в CardData.
 func NewCRUDCardService(client *serverclient.Client, user *user.User) *CRUDService[*payloads.CardWithComment, CardData] {
 	return &CRUDService[*payloads.CardWithComment, CardData]{
 		client: client,

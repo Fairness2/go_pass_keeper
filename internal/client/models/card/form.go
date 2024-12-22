@@ -240,6 +240,7 @@ func ccnValidator(s string) error {
 	return err
 }
 
+// expValidator проверяет формат даты истечения срока действия (ММ/ГГ), обеспечивая одинарную косую черту в третьей позиции и числовые значения.
 func expValidator(s string) error {
 	// The 3 character should be a slash (/)
 	// The rest should be numbers
@@ -257,6 +258,7 @@ func expValidator(s string) error {
 	return nil
 }
 
+// cvvValidator проверяет, является ли входная строка числовым значением, состоящим ровно из 3 цифр.
 func cvvValidator(s string) error {
 	// The CVV should be a number of 3 digits
 	// Since the input will already ensure that the CVV is a string of length 3,

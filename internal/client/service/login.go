@@ -17,14 +17,17 @@ var (
 	ErrInvalidResponseBody   = errors.New("invalid response body")
 )
 
+// LoginService предоставляет методы аутентификации пользователей с использованием клиента для связи с сервером.
 type LoginService struct {
 	client *serverclient.Client
 }
 
+// NewLoginService инициализирует новый экземпляр LoginService, используя предоставленный серверный клиент для аутентификации пользователя.
 func NewLoginService(client *serverclient.Client) *LoginService {
 	return &LoginService{client: client}
 }
 
+// Login аутентифицирует пользователя, отправляя его логин и пароль на сервер, и обрабатывает полученные токены.
 func (s *LoginService) Login(username, password string) error {
 	if username == "" {
 		return ErrEmptyUsername

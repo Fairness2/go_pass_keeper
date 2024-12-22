@@ -14,6 +14,7 @@ var (
 	ButtonFocusedStyle = FocusedStyle                                              // Определяет стиль фокуса, используемый для рендеринга кнопок с фокусом.
 	ButtonBlurredStyle = BlurredStyle                                              // Определяет стиль неактивной кнопки.
 	HeaderStyle        = FocusedStyle                                              // Определяет стиль заголовков, используя FocusedStyle по умолчанию.
+	DocStyle           = lipgloss.NewStyle()                                       // Определяет базовый стиль для отображения элементов документации.
 
 	// TextAreaFocused определяет стиль, применяемый к текстовой области, когда она находится в фокусе, включая текст, курсор и визуальные элементы.
 	TextAreaFocused = textarea.Style{

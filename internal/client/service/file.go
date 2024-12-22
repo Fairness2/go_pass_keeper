@@ -38,10 +38,13 @@ func (i FileData) Title() string {
 func (i FileData) Description() string { return i.Comment }
 func (i FileData) FilterValue() string { return string(i.Name) }
 
+// FileService предоставляет функции для управления файлами и связанными с ними комментариями,
+// использование CRUDService для стандартных операций, таких как создание, чтение, обновление и удаление.
 type FileService struct {
 	CRUDService[*payloads.FileWithComment, FileData]
 }
 
+// NewFileService создает и инициализирует новый экземпляр FileService с предоставленными конфигурациями клиента и пользователя.
 func NewFileService(client *serverclient.Client, user *user.User) *FileService {
 	return &FileService{
 		CRUDService[*payloads.FileWithComment, FileData]{
@@ -58,6 +61,8 @@ func NewFileService(client *serverclient.Client, user *user.User) *FileService {
 	}
 }
 
+// EncryptFile шифрует содержимое файла по заданному пути к файлу и создает временный зашифрованный файл.
+// Возвращает путь к зашифрованному временному файлу или ошибку в случае сбоя процесса.
 func (s *FileService) EncryptFile(filePath string) (string, error) {
 	originalFile, err := os.Open(filePath)
 	if err != nil {
@@ -86,6 +91,8 @@ func (s *FileService) EncryptFile(filePath string) (string, error) {
 	return encryptedFile.Name(), nil
 }
 
+// DecryptFile расшифровывает содержимое предоставленного io.Reader и записывает расшифрованные данные в указанный io.Writer.
+// Возвращает ошибку, если чтение, расшифровка или запись не удались.
 func (s *FileService) DecryptFile(from io.Reader, dest io.Writer) error {
 	enBody, err := io.ReadAll(from)
 	if err != nil {
@@ -102,6 +109,9 @@ func (s *FileService) DecryptFile(from io.Reader, dest io.Writer) error {
 	return nil
 }
 
+// CreateFile отправляет файл и связанные с ним метаданные на сервер для создания.
+// В качестве входных данных требуется объект FileWithComment и путь к файлу.
+// Возвращает ошибку, если запрос не выполнен или статус ответа недействителен.
 func (s *FileService) CreateFile(body *payloads.FileWithComment, filePath string) error {
 	request := s.client.Client.R()
 	response, err := request.SetAuthToken(s.client.Token).
@@ -120,6 +130,7 @@ func (s *FileService) CreateFile(body *payloads.FileWithComment, filePath string
 	return nil
 }
 
+// DownloadFile загружает файл с указанным идентификатором с сервера и сохраняет его по указанному пути назначения.
 func (s *FileService) DownloadFile(id int64, destFile string) error {
 	req := s.client.Client.R().
 		SetAuthToken(s.client.Token).

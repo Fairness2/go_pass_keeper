@@ -6,7 +6,6 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
 	"passkeeper/internal/payloads"
@@ -14,7 +13,6 @@ import (
 )
 
 var (
-	docStyle           = lipgloss.NewStyle()
 	headerText         = style.HeaderStyle.Render("Список текстов")
 	selectedHeaderText = style.HeaderStyle.Render("Текст")
 )
@@ -85,7 +83,7 @@ func (m List) updateWhileNotSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.deleteText()
 		}
 	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
+		h, v := style.DocStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
 	}
 

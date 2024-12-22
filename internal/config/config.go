@@ -32,6 +32,7 @@ var (
 	DefaultPublicJWTKey string
 )
 
+// Keys представляет пару ключей RSA, используемых для криптографических операций.
 type Keys struct {
 	Public  *rsa.PublicKey
 	Private *rsa.PrivateKey

@@ -20,6 +20,7 @@ func (i PassData) Title() string       { return i.Domen }
 func (i PassData) Description() string { return i.Comment }
 func (i PassData) FilterValue() string { return i.Domen }
 
+// NewCRUDPasswordService создает и возвращает новый CRUDService для управления PasswordWithComment с поддержкой расшифровки.
 func NewCRUDPasswordService(client *serverclient.Client, user *user.User) *CRUDService[*payloads.PasswordWithComment, PassData] {
 	return &CRUDService[*payloads.PasswordWithComment, PassData]{
 		client: client,
