@@ -22,8 +22,31 @@ type Key string
 // UserKey ключ авторизованного пользователя в контексте
 var UserKey Key = "user"
 
+var (
+	ErrHeaderNotExists = &commonerrors.RequestError{
+		InternalError: errors.New("authorization header is not exists"),
+		HTTPStatus:    http.StatusUnauthorized,
+	}
+	ErrTokenDoesntHasUserId = &commonerrors.RequestError{
+		InternalError: errors.New("token doesnt has user id"),
+		HTTPStatus:    http.StatusUnauthorized,
+	}
+	ErrUserIdIsIncorrect = &commonerrors.RequestError{
+		InternalError: errors.New("user id is incorrect"),
+		HTTPStatus:    http.StatusUnauthorized,
+	}
+	ErrUserNotExists = &commonerrors.RequestError{
+		InternalError: errors.New("user does not exist"),
+		HTTPStatus:    http.StatusUnauthorized,
+	}
+)
+
 type UserRepository interface {
 	GetUserByID(ctx context.Context, id int64) (*models.User, error)
+}
+
+type Generator interface {
+	Parse(tokenString string) (*jwt.Token, error)
 }
 
 // Authenticator выполняет аутентификацию и авторизацию пользователей с использованием токенов JWT и пула баз данных SQL
@@ -31,14 +54,14 @@ type Authenticator struct {
 	jwtKeys         *config.Keys
 	tokenExpiration time.Duration
 	repository      UserRepository
+	generator       Generator
 }
 
 // NewAuthenticator создает и возвращает новый экземпляр Authenticator с указанными параметрами подключения к базе данных и токенам JWT.
 func NewAuthenticator(dbPool repositories.SQLExecutor, jwtKeys *config.Keys, tokenExpiration time.Duration) *Authenticator {
 	return &Authenticator{
-		repository:      repositories.NewUserRepository(dbPool),
-		jwtKeys:         jwtKeys,
-		tokenExpiration: tokenExpiration,
+		repository: repositories.NewUserRepository(dbPool),
+		generator:  NewJWTGenerator(jwtKeys.Private, jwtKeys.Public, tokenExpiration, JWTTypeAccess),
 	}
 }
 
@@ -52,8 +75,7 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 			return
 		}
 		// Парсим токен
-		generator := NewJWTGenerator(a.jwtKeys.Private, a.jwtKeys.Public, a.tokenExpiration, JWTTypeAccess)
-		tkn, err := generator.Parse(tknString)
+		tkn, err := a.generator.Parse(tknString)
 		if err != nil {
 			logger.Log.Info(err)
 			helpers.ProcessResponseWithStatus("token is not valid", http.StatusUnauthorized, w)
@@ -81,10 +103,7 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 func (a *Authenticator) getToken(r *http.Request) (string, error) {
 	tknString := r.Header.Get("Authorization")
 	if tknString == "" || !strings.HasPrefix(tknString, "Bearer ") {
-		return "", &commonerrors.RequestError{
-			InternalError: errors.New("Authorization header is not exists"),
-			HTTPStatus:    http.StatusUnauthorized,
-		}
+		return "", ErrHeaderNotExists
 	}
 	tknString = strings.TrimPrefix(tknString, "Bearer ")
 	return tknString, nil
@@ -94,17 +113,11 @@ func (a *Authenticator) getToken(r *http.Request) (string, error) {
 func (a *Authenticator) getUserIdFromToken(tkn *jwt.Token) (int64, error) {
 	idStr, err := tkn.Claims.GetSubject()
 	if err != nil {
-		return 0, &commonerrors.RequestError{
-			InternalError: errors.New("token doesnt has user id"),
-			HTTPStatus:    http.StatusUnauthorized,
-		}
+		return 0, ErrTokenDoesntHasUserId
 	}
 	userID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		return 0, &commonerrors.RequestError{
-			InternalError: errors.New("user id is incorrect"),
-			HTTPStatus:    http.StatusUnauthorized,
-		}
+		return 0, ErrUserIdIsIncorrect
 	}
 	return userID, nil
 }
@@ -113,10 +126,7 @@ func (a *Authenticator) getUserIdFromToken(tkn *jwt.Token) (int64, error) {
 func (a *Authenticator) getUserById(ctx context.Context, userID int64) (*models.User, error) {
 	user, err := a.repository.GetUserByID(ctx, userID)
 	if err != nil && errors.Is(err, repositories.ErrNotExist) {
-		return nil, &commonerrors.RequestError{
-			InternalError: errors.New("user does not exist"),
-			HTTPStatus:    http.StatusUnauthorized,
-		}
+		return nil, ErrUserNotExists
 	}
 	if err != nil {
 		return nil, err
