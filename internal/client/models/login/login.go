@@ -16,10 +16,13 @@ import (
 )
 
 var (
-	buttonTest    = "[ Вход ]"
-	focusedButton = style.ButtonFocusedStyle.Render(buttonTest)
-	headerText    = style.HeaderStyle.Render("Вход в систему")
-	blurredButton = style.ButtonBlurredStyle.Render(buttonTest)
+	buttonLogin           = "[ Вход ]"
+	buttonRegister        = "[ Регистрация ]"
+	headerText            = style.HeaderStyle.Render("Вход или регистрация")
+	focusedLoginButton    = style.ButtonFocusedStyle.Render(buttonLogin)
+	blurredLoginButton    = style.ButtonBlurredStyle.Render(buttonLogin)
+	focusedRegisterButton = style.ButtonFocusedStyle.Render(buttonRegister)
+	blurredRegisterButton = style.ButtonBlurredStyle.Render(buttonRegister)
 )
 
 // Model представляет собой основную структуру для управления состоянием пользовательского интерфейса входа в систему и его взаимодействия с LoginService.
@@ -69,9 +72,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "tab", "shift+tab", "enter", "up", "down":
 			s := msg.String()
 			if s == "enter" && m.focusIndex == len(m.inputs) {
-				return m.authorize()
+				return m.authorize(false)
 			}
-			m.focusIndex = models.IncrementCircleIndex(m.focusIndex, len(m.inputs), s)
+			if s == "enter" && m.focusIndex == len(m.inputs)+1 {
+				return m.authorize(true)
+			}
+			m.focusIndex = models.IncrementCircleIndex(m.focusIndex, len(m.inputs)+1, s)
 			return m, m.getCmds()
 		case "f1":
 			m.showInfo = !m.showInfo
@@ -130,11 +136,15 @@ func (m Model) View() string {
 			style.BlurredStyle.Render("LogLevel: "+config.LogLevel),
 		)
 	}
-	button := &blurredButton
+	loginButton := blurredLoginButton
 	if m.focusIndex == len(m.inputs) {
-		button = &focusedButton
+		loginButton = focusedLoginButton
 	}
-	fmt.Fprintf(&b, "\n%s\n\n", *button)
+	registerButton := blurredRegisterButton
+	if m.focusIndex == len(m.inputs)+1 {
+		registerButton = focusedRegisterButton
+	}
+	fmt.Fprintf(&b, "\n%s     %s\n\n", loginButton, registerButton)
 
 	b.WriteString(m.help.ShortHelpView(m.helpKeys))
 
@@ -142,15 +152,15 @@ func (m Model) View() string {
 }
 
 // login пытается авторизовать пользователя, используя предоставленные логин и пароль, и в случае неудачи возвращает ошибку.
-func (m Model) login() error {
+func (m Model) login(isRegistration bool) error {
 	login := m.inputs[0].Value()
 	password := m.inputs[1].Value()
-	return m.service.Login(login, password)
+	return m.service.Login(login, password, isRegistration)
 }
 
 // authorize пытается авторизовать в систему пользователя и в случае успеха переходит к новой модели меню, в противном случае возвращает ошибки.
-func (m Model) authorize() (tea.Model, tea.Cmd) {
-	if err := m.login(); err != nil {
+func (m Model) authorize(isRegistration bool) (tea.Model, tea.Cmd) {
+	if err := m.login(isRegistration); err != nil {
 		m.modelError = err
 		return m, m.getCmds()
 	}

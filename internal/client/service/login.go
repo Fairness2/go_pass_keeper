@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"github.com/go-resty/resty/v2"
 	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/payloads"
@@ -28,7 +29,7 @@ func NewLoginService(client *serverclient.Client) *LoginService {
 }
 
 // Login аутентифицирует пользователя, отправляя его логин и пароль на сервер, и обрабатывает полученные токены.
-func (s *LoginService) Login(username, password string) error {
+func (s *LoginService) Login(username, password string, isRegistration bool) error {
 	if username == "" {
 		return ErrEmptyUsername
 	}
@@ -45,7 +46,12 @@ func (s *LoginService) Login(username, password string) error {
 	}
 	request := s.client.Client.R()
 	request.SetBody(marshaledBody)
-	response, err := request.Post("/api/user/login")
+	var response *resty.Response
+	if !isRegistration {
+		response, err = request.Post("/api/user/login")
+	} else {
+		response, err = request.Post("/api/user/register")
+	}
 	if err != nil {
 		return errors.Join(ErrSendingRequest, err)
 	}
