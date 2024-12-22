@@ -24,7 +24,7 @@ var (
 // Form представляет собой структуру для управления формами пользовательского ввода, включая управление фокусом и проверку ввода.
 type Form struct {
 	focusIndex int
-	pService   *service.PasswordService
+	pService   *service.CRUDService[*payloads.PasswordWithComment, service.PassData]
 	data       *payloads.PasswordWithComment
 	modelError error
 	inputs     []components.BlinkInput
@@ -33,7 +33,7 @@ type Form struct {
 }
 
 // InitialForm инициализирует и возвращает форму с предопределенными полями ввода и привязками помощи по навигации с помощью клавиатуры.
-func InitialForm(service *service.PasswordService, data *payloads.PasswordWithComment) Form {
+func InitialForm(service *service.CRUDService[*payloads.PasswordWithComment, service.PassData], data *payloads.PasswordWithComment) Form {
 	lgn := components.NewTInput("Логин", string(data.Username), true)
 	domen := components.NewTInput("Домен", data.Domen, false)
 	pass := components.NewTInput("Пароль", string(data.Password.Password), false)
@@ -98,18 +98,18 @@ func (m Form) updatePassword() (tea.Model, tea.Cmd) {
 	m.data.Password.Password = []byte(m.inputs[1].Value())
 	m.data.Comment = m.inputs[3].Value()
 	var err error
-	m.data, err = m.pService.EncryptPassword(m.data)
+	m.data, err = m.pService.EncryptItem(m.data)
 	if err != nil {
 		m.modelError = err
 		return m, m.getCmds()
 	}
 	if m.data.ID == 0 {
-		if err = m.pService.CreatePassword(m.data); err != nil {
+		if err = m.pService.Create(m.data); err != nil {
 			m.modelError = err
 			return m, m.getCmds()
 		}
 	} else {
-		if err = m.pService.UpdatePassword(m.data); err != nil {
+		if err = m.pService.Update(m.data); err != nil {
 			m.modelError = err
 			return m, m.getCmds()
 		}

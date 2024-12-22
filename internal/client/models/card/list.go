@@ -22,7 +22,7 @@ var (
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка карт.
 type List struct {
 	list       list.Model
-	pService   *service.CardService
+	pService   *service.CRUDService[*payloads.CardWithComment, service.CardData]
 	modelError error
 	selected   *service.CardData
 	help       help.Model
@@ -31,7 +31,7 @@ type List struct {
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.CardService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(cardService *service.CardService) List {
+func NewList(cardService *service.CRUDService[*payloads.CardWithComment, service.CardData]) List {
 	m := List{
 		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
 		pService: cardService,
@@ -122,7 +122,7 @@ func (m List) updateCard() (tea.Model, tea.Cmd) {
 // Если во время удаления или обновления возникает ошибка, устанавливается modelError и не выдается команда.
 func (m List) deleteCard() (tea.Model, tea.Cmd) {
 	selected := m.list.SelectedItem().(service.CardData)
-	err := m.pService.DeleteCard(selected.ID)
+	err := m.pService.Delete(selected.ID)
 	if err != nil {
 		m.modelError = err
 		return m, nil
@@ -164,7 +164,7 @@ func (m List) View() string {
 
 // refresh обновить обновляет список, получая карты из CardService и устанавливая их как элементы списка.
 func (l *List) refresh() error {
-	cards, err := l.pService.GetCards()
+	cards, err := l.pService.Get()
 	if err != nil {
 		return err
 	}

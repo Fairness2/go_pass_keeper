@@ -128,7 +128,7 @@ func (m List) updateFile() (tea.Model, tea.Cmd) {
 // Если во время удаления или обновления возникает ошибка, устанавливается modelError и не выдается команда.
 func (m List) deleteFile() (tea.Model, tea.Cmd) {
 	selected := m.list.SelectedItem().(service.FileData)
-	err := m.pService.DeleteFile(selected.ID)
+	err := m.pService.Delete(selected.ID)
 	if err != nil {
 		m.modelError = err
 		return m, nil
@@ -147,6 +147,8 @@ func (m List) updateWhileSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc", "backspace":
 			m.selected = nil
 			return m, nil
+		case "z":
+			return m.downloadFile()
 		}
 	}
 
@@ -170,7 +172,7 @@ func (m List) View() string {
 
 // refresh обновить обновляет список, получая файлы из FileService и устанавливая их как элементы списка.
 func (l *List) refresh() error {
-	files, err := l.pService.GetFiles()
+	files, err := l.pService.Get()
 	if err != nil {
 		return err
 	}
@@ -207,7 +209,7 @@ func (l List) downloadFile() (tea.Model, tea.Cmd) {
 		temp.Close()
 		os.Remove(temp.Name())
 	}()
-	destFile, err := os.Create(fmt.Sprintf("%s/%s", "/Users/konstantinkuzminyh/sites/go_pass_keeper/download", string(selected.Name)))
+	destFile, err := os.Create(fmt.Sprintf("%s/%s", "/Users/konstantinkuzminyh/sites/go_pass_keeper/download", string(selected.Name))) // TODO
 	if err != nil {
 		l.modelError = err
 		return l, nil

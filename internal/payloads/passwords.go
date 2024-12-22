@@ -1,5 +1,7 @@
 package payloads
 
+import "passkeeper/internal/encrypt/cipher"
+
 // SavePassword представляет структуру для сохранения пароля, включая домен, имя пользователя, пароль и необязательный комментарий.
 type SavePassword struct {
 	ID       int64  `json:"id,omitempty"`
@@ -21,4 +23,32 @@ type Password struct {
 type PasswordWithComment struct {
 	Password
 	Comment string `json:"comment"`
+}
+
+func (item *PasswordWithComment) Encrypt(ch *cipher.Cipher) error {
+	eUsername, err := ch.Encrypt(item.Username)
+	if err != nil {
+		return err
+	}
+	item.Username = eUsername
+	ePass, err := ch.Encrypt(item.Password.Password)
+	if err != nil {
+		return err
+	}
+	item.Password.Password = ePass
+	return nil
+}
+
+func (item *PasswordWithComment) Decrypt(ch *cipher.Cipher) error {
+	dUsername, err := ch.Decrypt(item.Username)
+	if err != nil {
+		return err
+	}
+	item.Username = dUsername
+	dPass, err := ch.Decrypt(item.Password.Password)
+	if err != nil {
+		return err
+	}
+	item.Password.Password = dPass
+	return nil
 }

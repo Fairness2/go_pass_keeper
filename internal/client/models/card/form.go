@@ -33,7 +33,7 @@ const (
 // Form представляет собой структуру для управления формами пользовательского ввода, включая управление фокусом и проверку ввода.
 type Form struct {
 	focusIndex int
-	pService   *service.CardService
+	pService   *service.CRUDService[*payloads.CardWithComment, service.CardData]
 	data       *payloads.CardWithComment
 	modelError error
 	inputs     []components.BlinkInput
@@ -42,7 +42,7 @@ type Form struct {
 }
 
 // InitialForm инициализирует и возвращает форму с предопределенными полями ввода и привязками помощи по навигации с помощью клавиатуры.
-func InitialForm(service *service.CardService, data *payloads.CardWithComment) Form {
+func InitialForm(service *service.CRUDService[*payloads.CardWithComment, service.CardData], data *payloads.CardWithComment) Form {
 	number := components.NewTInput("**** **** **** ****", string(data.Number), true)
 	number.CharLimit = 20
 	number.Width = 30
@@ -123,18 +123,18 @@ func (m Form) updateCard() (tea.Model, tea.Cmd) {
 	m.data.Owner = []byte(m.inputs[ownerI].Value())
 	m.data.Comment = m.inputs[commentI].Value()
 	var err error
-	m.data, err = m.pService.EncryptCard(m.data)
+	m.data, err = m.pService.EncryptItem(m.data)
 	if err != nil {
 		m.modelError = err
 		return m, m.getCmds()
 	}
 	if m.data.ID == 0 {
-		if err = m.pService.CreateCard(m.data); err != nil {
+		if err = m.pService.Create(m.data); err != nil {
 			m.modelError = err
 			return m, m.getCmds()
 		}
 	} else {
-		if err = m.pService.UpdateCard(m.data); err != nil {
+		if err = m.pService.Update(m.data); err != nil {
 			m.modelError = err
 			return m, m.getCmds()
 		}

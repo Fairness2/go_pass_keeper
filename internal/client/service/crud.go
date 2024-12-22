@@ -8,7 +8,6 @@ import (
 	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/encrypt/cipher"
-	"passkeeper/internal/payloads"
 )
 
 type Encryptable interface {
@@ -21,20 +20,6 @@ type CRUDService[T Encryptable, Y list.Item] struct {
 	user   *user.User
 	url    string
 	crtY   func(T) Y
-}
-
-func NewCRUDTextService(client *serverclient.Client, user *user.User) *CRUDService[*payloads.TextWithComment, TextData] {
-	return &CRUDService[*payloads.TextWithComment, TextData]{
-		client: client,
-		user:   user,
-		url:    textURL,
-		crtY: func(t *payloads.TextWithComment) TextData {
-			return TextData{
-				TextWithComment: *t,
-				IsDecrypted:     true,
-			}
-		},
-	}
 }
 
 func (s *CRUDService[T, Y]) Get() ([]Y, error) {

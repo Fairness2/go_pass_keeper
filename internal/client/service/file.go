@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -40,49 +39,23 @@ func (i FileData) Description() string { return i.Comment }
 func (i FileData) FilterValue() string { return string(i.Name) }
 
 type FileService struct {
-	client *serverclient.Client
-	user   *user.User
+	CRUDService[*payloads.FileWithComment, FileData]
 }
 
 func NewFileService(client *serverclient.Client, user *user.User) *FileService {
 	return &FileService{
-		client: client,
-		user:   user,
+		CRUDService[*payloads.FileWithComment, FileData]{
+			client: client,
+			user:   user,
+			url:    fileURL,
+			crtY: func(t *payloads.FileWithComment) FileData {
+				return FileData{
+					FileWithComment: *t,
+					IsDecrypted:     true,
+				}
+			},
+		},
 	}
-}
-
-func (s *FileService) GetFiles() ([]FileData, error) {
-	request := s.client.Client.R()
-	request.SetAuthToken(s.client.Token)
-	response, err := request.Get(fileURL)
-	if err != nil {
-		return nil, errors.Join(ErrSendingRequest, err)
-	}
-	if response.StatusCode() != 200 {
-		return nil, ErrInvalidResponseStatus
-	}
-	var files []payloads.FileWithComment
-	err = json.Unmarshal(response.Body(), &files)
-	if err != nil {
-		return nil, errors.Join(ErrInvalidResponseBody, err)
-	}
-	dCards, err := s.DecryptFiles(files)
-	if err != nil {
-		return nil, errors.Join(ErrInvalidResponseBody, err)
-	}
-	return dCards, nil
-}
-
-func (s *FileService) EncryptFileInfo(body *payloads.FileWithComment) (*payloads.FileWithComment, error) {
-	// TODO
-	ch := cipher.NewCipher([]byte(s.user.Password))
-	eName, err := ch.Encrypt(body.Name)
-	if err != nil {
-		return body, err
-	}
-	body.Name = eName
-
-	return body, nil
 }
 
 func (s *FileService) EncryptFile(filePath string) (string, error) {
@@ -113,24 +86,6 @@ func (s *FileService) EncryptFile(filePath string) (string, error) {
 	return encryptedFile.Name(), nil
 }
 
-func (s *FileService) DecryptFiles(files []payloads.FileWithComment) ([]FileData, error) {
-	ch := cipher.NewCipher([]byte(s.user.Password))
-	dFiles := make([]FileData, len(files))
-	for i, file := range files {
-		dName, err := ch.Decrypt(file.Name)
-		if err != nil {
-			return nil, err
-		}
-		file.Name = dName
-		dFiles[i] = FileData{
-			FileWithComment: file,
-			IsDecrypted:     true,
-		}
-	}
-
-	return dFiles, nil
-}
-
 func (s *FileService) DecryptFile(from io.Reader, dest io.Writer) error {
 	enBody, err := io.ReadAll(from)
 	if err != nil {
@@ -155,34 +110,7 @@ func (s *FileService) CreateFile(body *payloads.FileWithComment, filePath string
 			"name":    string(body.Name),
 			"comment": body.Comment,
 		}).
-		Post(fileURL)
-	if err != nil {
-		return errors.Join(ErrSendingRequest, err)
-	}
-	if response.StatusCode() != 200 {
-		return ErrInvalidResponseStatus
-	}
-	return nil
-}
-
-func (s *FileService) UpdateFile(body *payloads.FileWithComment) error {
-	response, err := s.client.Client.R().
-		SetAuthToken(s.client.Token).
-		SetBody(body).
-		Put(fileURL)
-	if err != nil {
-		return errors.Join(ErrSendingRequest, err)
-	}
-	if response.StatusCode() != 200 {
-		return ErrInvalidResponseStatus
-	}
-	return nil
-}
-
-func (s *FileService) DeleteFile(id int64) error {
-	response, err := s.client.Client.R().
-		SetAuthToken(s.client.Token).
-		Delete(fmt.Sprintf("%s/%d", fileURL, id))
+		Post(s.url)
 	if err != nil {
 		return errors.Join(ErrSendingRequest, err)
 	}
@@ -196,7 +124,7 @@ func (s *FileService) DownloadFile(id int64, destFile string) error {
 	req := s.client.Client.R().
 		SetAuthToken(s.client.Token).
 		SetOutput(destFile)
-	resp, err := req.Get(fmt.Sprintf("%s/download/%d", fileURL, id))
+	resp, err := req.Get(fmt.Sprintf("%s/download/%d", s.url, id))
 	if err != nil {
 		return err
 	}

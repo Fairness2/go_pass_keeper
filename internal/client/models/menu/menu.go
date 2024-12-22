@@ -83,7 +83,7 @@ func (m Model) View() string {
 func (m Model) nextView() (tea.Model, tea.Cmd) {
 	switch m.cb.GetChoice() {
 	case 0:
-		l := password.NewList(service.NewPasswordService(serverclient.Inst, user.CurrentUser))
+		l := password.NewList(service.NewCRUDPasswordService(serverclient.Inst, user.CurrentUser))
 		return l, l.Init()
 	case 1:
 		l := text.NewList(service.NewCRUDTextService(serverclient.Inst, user.CurrentUser))
@@ -92,7 +92,7 @@ func (m Model) nextView() (tea.Model, tea.Cmd) {
 		l := file.NewList(service.NewFileService(serverclient.Inst, user.CurrentUser))
 		return l, l.Init()
 	case 3:
-		l := card.NewList(service.NewCardService(serverclient.Inst, user.CurrentUser))
+		l := card.NewList(service.NewCRUDCardService(serverclient.Inst, user.CurrentUser))
 		return l, l.Init()
 	default:
 		return m, nil

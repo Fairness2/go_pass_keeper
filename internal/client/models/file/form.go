@@ -101,7 +101,7 @@ func (m Form) updateFile() (tea.Model, tea.Cmd) {
 	m.data.Name = []byte(m.inputs[nameI].Value())
 	m.data.Comment = m.inputs[commentI].Value()
 	var err error
-	m.data, err = m.pService.EncryptFileInfo(m.data)
+	m.data, err = m.pService.EncryptItem(m.data)
 	if err != nil {
 		m.modelError = err
 		return m, m.getCmds()
@@ -118,7 +118,7 @@ func (m Form) updateFile() (tea.Model, tea.Cmd) {
 			return m, m.getCmds()
 		}
 	} else {
-		if err = m.pService.UpdateFile(m.data); err != nil {
+		if err = m.pService.Update(m.data); err != nil {
 			m.modelError = err
 			return m, m.getCmds()
 		}

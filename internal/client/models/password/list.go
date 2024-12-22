@@ -19,29 +19,19 @@ var (
 	selectedHeaderText = style.HeaderStyle.Render("Пароль")
 )
 
-// PassData представляет собой структуру данных пароля с дополнительным комментарием и расшифрованным состоянием.
-type PassData struct {
-	payloads.PasswordWithComment
-	isDecrypted bool
-}
-
-func (i PassData) Title() string       { return i.Domen }
-func (i PassData) Description() string { return i.Comment }
-func (i PassData) FilterValue() string { return i.Domen }
-
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка паролей.
 type List struct {
 	list       list.Model
-	pService   *service.PasswordService
+	pService   *service.CRUDService[*payloads.PasswordWithComment, service.PassData]
 	modelError error
-	selected   *payloads.PasswordWithComment
+	selected   *service.PassData
 	help       help.Model
 	helpKeys   []key.Binding
 }
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.PasswordService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(passwordService *service.PasswordService) List {
+func NewList(passwordService *service.CRUDService[*payloads.PasswordWithComment, service.PassData]) List {
 	m := List{
 		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
 		pService: passwordService,
@@ -106,15 +96,9 @@ func (m List) updateWhileNotSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // selectItem расшифровывает пароль выбранного элемента, обновляет его состояние и устанавливает его в качестве текущего выбранного элемента в модели.
 func (m List) selectItem() (tea.Model, tea.Cmd) {
-	selected := m.list.SelectedItem().(PassData)
-	pas, err := m.pService.DecryptPassword(&selected.PasswordWithComment)
-	if err != nil {
-		m.modelError = err
-		return m, nil
-	}
-	selected.isDecrypted = true
+	selected := m.list.SelectedItem().(service.PassData)
 	m.modelError = nil
-	m.selected = pas
+	m.selected = &selected
 	return m, nil
 }
 
@@ -127,18 +111,8 @@ func (m List) newPassword() (tea.Model, tea.Cmd) {
 
 // updatePassword переключает модель на форму обновления пароля, при необходимости расшифровывая выбранный пароль.
 func (m List) updatePassword() (tea.Model, tea.Cmd) {
-	selected := m.list.SelectedItem().(PassData)
-	var selectedData *payloads.PasswordWithComment
-	var err error
-	if selected.isDecrypted {
-		selectedData = &selected.PasswordWithComment
-	} else {
-		selectedData, err = m.pService.DecryptPassword(&selected.PasswordWithComment)
-		if err != nil {
-			m.modelError = err
-			return m, nil
-		}
-	}
+	selected := m.list.SelectedItem().(service.PassData)
+	selectedData := &selected.PasswordWithComment
 	newForm := InitialForm(m.pService, selectedData)
 	return newForm, newForm.Init()
 }
@@ -147,8 +121,8 @@ func (m List) updatePassword() (tea.Model, tea.Cmd) {
 // Возвращает обновленную модель и команду.
 // Если во время удаления или обновления возникает ошибка, устанавливается modelError и не выдается команда.
 func (m List) deletePassword() (tea.Model, tea.Cmd) {
-	selected := m.list.SelectedItem().(PassData)
-	err := m.pService.DeletePassword(selected.ID)
+	selected := m.list.SelectedItem().(service.PassData)
+	err := m.pService.Delete(selected.ID)
 	if err != nil {
 		m.modelError = err
 		return m, nil
@@ -190,15 +164,13 @@ func (m List) View() string {
 
 // refresh обновить обновляет список, получая пароли из PasswordService и устанавливая их как элементы списка.
 func (l *List) refresh() error {
-	passwords, err := l.pService.GetPasswords()
+	passwords, err := l.pService.Get()
 	if err != nil {
 		return err
 	}
 	pl := make([]list.Item, len(passwords))
 	for i, p := range passwords {
-		pl[i] = PassData{
-			PasswordWithComment: p,
-		}
+		pl[i] = p
 	}
 	l.list.SetItems(pl)
 	return nil
