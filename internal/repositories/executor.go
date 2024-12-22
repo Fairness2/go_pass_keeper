@@ -13,5 +13,4 @@ type SQLExecutor interface {
 	QueryRowxContext(ctx context.Context, query string, args ...interface{}) *sqlx.Row
 	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	NamedExecContext(ctx context.Context, query string, arg interface{}) (sql.Result, error)
-	Rebind(query string) string
 }

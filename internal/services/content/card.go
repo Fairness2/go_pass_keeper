@@ -19,13 +19,13 @@ import (
 
 // CardService предоставляет методы для управления картами пользователей и соответствующими комментариями в системе.
 type CardService struct {
-	dbPool repositories.SQLExecutor
+	repository *repositories.CrudRepository[models.CardContent, models.CardWithComment]
 }
 
 // NewCardService инициализирует и возвращает новый экземпляр CardService, настроенный с использованием предоставленной базой.
 func NewCardService(dbPool repositories.SQLExecutor) *CardService {
 	return &CardService{
-		dbPool: dbPool,
+		repository: repositories.NewCardRepository(dbPool),
 	}
 }
 
@@ -61,8 +61,7 @@ func (s *CardService) SaveCardHandler(response http.ResponseWriter, request *htt
 		ContentType: models.TypeCard,
 		Comment:     body.Comment,
 	}
-	repository := repositories.NewCardRepository(request.Context(), s.dbPool)
-	if err = repository.Create(card, comment); err != nil {
+	if err = s.repository.Create(request.Context(), card, comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
@@ -120,10 +119,9 @@ func (s *CardService) UpdateCardHandler(response http.ResponseWriter, request *h
 		ContentID:   body.ID,
 		UpdatedAt:   time.Now(),
 	}
-	repository := repositories.NewCardRepository(request.Context(), s.dbPool)
-
+	ctx := request.Context()
 	// Проверяем есть ли такой пароль у пользователя
-	_, err = repository.GetByUserIDAndId(card.UserID, card.ID)
+	_, err = s.repository.GetByUserIDAndId(ctx, card.UserID, card.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("Card not found", http.StatusNotFound, response)
@@ -134,7 +132,7 @@ func (s *CardService) UpdateCardHandler(response http.ResponseWriter, request *h
 		}
 	}
 	// Обновляем пароль
-	if err = repository.Create(card, comment); err != nil {
+	if err = s.repository.Create(ctx, card, comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
@@ -148,8 +146,7 @@ func (s *CardService) GetUserCards(response http.ResponseWriter, request *http.R
 		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	repository := repositories.NewCardRepository(request.Context(), s.dbPool)
-	cards, err := repository.GetByUserID(user.ID)
+	cards, err := s.repository.GetByUserID(request.Context(), user.ID)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
@@ -192,8 +189,8 @@ func (s *CardService) DeleteUserCard(response http.ResponseWriter, request *http
 		helpers.ProcessResponseWithStatus("Card ID is not correct", http.StatusBadRequest, response)
 		return
 	}
-	repository := repositories.NewCardRepository(request.Context(), s.dbPool)
-	if err = repository.DeleteByUserIDAndID(user.ID, id); err != nil {
+
+	if err = s.repository.DeleteByUserIDAndID(request.Context(), user.ID, id); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
 		return
 	}

@@ -19,13 +19,13 @@ import (
 
 // TextService предоставляет методы для управления текстами пользователей и соответствующими комментариями в системе.
 type TextService struct {
-	dbPool repositories.SQLExecutor
+	repository *repositories.CrudRepository[models.TextContent, models.TextWithComment]
 }
 
 // NewTextService инициализирует и возвращает новый экземпляр TextService, настроенный с использованием предоставленной базой.
 func NewTextService(dbPool repositories.SQLExecutor) *TextService {
 	return &TextService{
-		dbPool: dbPool,
+		repository: repositories.NewTextRepository(dbPool),
 	}
 }
 
@@ -58,8 +58,7 @@ func (s *TextService) SaveTextHandler(response http.ResponseWriter, request *htt
 		ContentType: models.TypeText,
 		Comment:     body.Comment,
 	}
-	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
-	if err = repository.Create(pass, comment); err != nil {
+	if err = s.repository.Create(request.Context(), pass, comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
@@ -114,10 +113,9 @@ func (s *TextService) UpdateTextHandler(response http.ResponseWriter, request *h
 		ContentID:   body.ID,
 		UpdatedAt:   time.Now(),
 	}
-	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
-
+	ctx := request.Context()
 	// Проверяем есть ли такой пароль у пользователя
-	_, err = repository.GetByUserIDAndId(text.UserID, text.ID)
+	_, err = s.repository.GetByUserIDAndId(ctx, text.UserID, text.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("Text not found", http.StatusNotFound, response)
@@ -128,7 +126,7 @@ func (s *TextService) UpdateTextHandler(response http.ResponseWriter, request *h
 		}
 	}
 	// Обновляем пароль
-	if err = repository.Create(text, comment); err != nil {
+	if err = s.repository.Create(ctx, text, comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
@@ -142,8 +140,7 @@ func (s *TextService) GetUserTexts(response http.ResponseWriter, request *http.R
 		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
-	texts, err := repository.GetByUserID(user.ID)
+	texts, err := s.repository.GetByUserID(request.Context(), user.ID)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
@@ -183,8 +180,7 @@ func (s *TextService) DeleteUserText(response http.ResponseWriter, request *http
 		helpers.ProcessResponseWithStatus("Text ID is not correct", http.StatusBadRequest, response)
 		return
 	}
-	repository := repositories.NewTextRepository(request.Context(), s.dbPool)
-	if err = repository.DeleteByUserIDAndID(user.ID, id); err != nil {
+	if err = s.repository.DeleteByUserIDAndID(request.Context(), user.ID, id); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
 		return
 	}

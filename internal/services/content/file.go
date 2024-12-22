@@ -26,15 +26,15 @@ var (
 
 // FileService предоставляет методы для управления файлами пользователей и соответствующими комментариями в системе.
 type FileService struct {
-	dbPool   repositories.SQLExecutor
-	filePath string
+	repository *repositories.CrudRepository[models.FileContent, models.FileWithComment]
+	filePath   string
 }
 
 // NewFileService инициализирует и возвращает новый экземпляр FileService, настроенный с использованием предоставленной базой.
 func NewFileService(dbPool repositories.SQLExecutor, filePath string) *FileService {
 	return &FileService{
-		dbPool:   dbPool,
-		filePath: filePath,
+		repository: repositories.NewFileRepository(dbPool),
+		filePath:   filePath,
 	}
 }
 
@@ -53,8 +53,7 @@ func (s *FileService) SaveFileHandler(response http.ResponseWriter, request *htt
 		helpers.ProcessRequestErrorWithBody(err, response)
 		return
 	}
-	repository := repositories.NewFileRepository(request.Context(), s.dbPool)
-	if err = repository.Create(fileBody, commentBody); err != nil {
+	if err = s.repository.Create(request.Context(), fileBody, commentBody); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 		if s.deleteFile(fileBody.FilePath, user.ID) != nil {
 			logger.Log.Error(err)
@@ -64,7 +63,6 @@ func (s *FileService) SaveFileHandler(response http.ResponseWriter, request *htt
 
 // getSaveFileBody анализирует и проверяет тело HTTP-запроса для извлечения полезных данных или возвращает ошибку.
 func (s *FileService) getSaveFileBody(request *http.Request, userID int64) (models.FileContent, models.Comment, error) {
-
 	err := request.ParseMultipartForm(10 << 20)
 	if err != nil {
 		return models.FileContent{}, models.Comment{}, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
@@ -159,10 +157,9 @@ func (s *FileService) UpdateFileHandler(response http.ResponseWriter, request *h
 		ContentID:   body.ID,
 		UpdatedAt:   time.Now(),
 	}
-	repository := repositories.NewFileRepository(request.Context(), s.dbPool)
-
+	ctx := request.Context()
 	// Проверяем есть ли такой пароль у пользователя
-	_, err = repository.GetByUserIDAndId(user.ID, info.ID)
+	_, err = s.repository.GetByUserIDAndId(ctx, user.ID, info.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
@@ -173,7 +170,7 @@ func (s *FileService) UpdateFileHandler(response http.ResponseWriter, request *h
 		}
 	}
 	// Обновляем пароль
-	if err = repository.Create(info, comment); err != nil {
+	if err = s.repository.Create(ctx, info, comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
@@ -204,8 +201,7 @@ func (s *FileService) GetUserFiles(response http.ResponseWriter, request *http.R
 		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	repository := repositories.NewFileRepository(request.Context(), s.dbPool)
-	files, err := repository.GetByUserID(user.ID)
+	files, err := s.repository.GetByUserID(request.Context(), user.ID)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
@@ -243,8 +239,8 @@ func (s *FileService) DeleteUserFile(response http.ResponseWriter, request *http
 		helpers.ProcessResponseWithStatus("File ID is not correct", http.StatusBadRequest, response)
 		return
 	}
-	repository := repositories.NewFileRepository(request.Context(), s.dbPool)
-	file, err := repository.GetByUserIDAndId(user.ID, id)
+	ctx := request.Context()
+	file, err := s.repository.GetByUserIDAndId(ctx, user.ID, id)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
@@ -259,7 +255,7 @@ func (s *FileService) DeleteUserFile(response http.ResponseWriter, request *http
 		return
 	}
 
-	if err = repository.DeleteByUserIDAndID(user.ID, id); err != nil {
+	if err = s.repository.DeleteByUserIDAndID(ctx, user.ID, id); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
 		return
 	}
@@ -278,8 +274,7 @@ func (s *FileService) DownloadFileHandler(response http.ResponseWriter, request 
 		helpers.ProcessResponseWithStatus("File ID is not correct", http.StatusBadRequest, response)
 		return
 	}
-	repository := repositories.NewFileRepository(request.Context(), s.dbPool)
-	file, err := repository.GetByUserIDAndId(user.ID, id)
+	file, err := s.repository.GetByUserIDAndId(request.Context(), user.ID, id)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)

@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/asaskevich/govalidator"
@@ -19,7 +20,7 @@ import (
 
 // Handlers для обработки запросов, связанных с регистрацией и аутентификацией пользователей.
 type Handlers struct {
-	dbPool                 repositories.SQLExecutor
+	repository             *repositories.UserRepository
 	jwtKeys                *config.Keys
 	tokenExpiration        time.Duration
 	refreshTokenExpiration time.Duration
@@ -30,7 +31,7 @@ type Handlers struct {
 // настроенный с указанным подключением к базе данных, ключами JWT, сроком действия токена и хэш-ключом.
 func NewHandlers(dbPool repositories.SQLExecutor, jwtKeys *config.Keys, tokenExpiration, refreshTokenExpiration time.Duration, hashKey string) *Handlers {
 	return &Handlers{
-		dbPool:                 dbPool,
+		repository:             repositories.NewUserRepository(dbPool),
 		jwtKeys:                jwtKeys,
 		tokenExpiration:        tokenExpiration,
 		refreshTokenExpiration: refreshTokenExpiration,
@@ -58,9 +59,9 @@ func (l *Handlers) RegistrationHandler(response http.ResponseWriter, request *ht
 		return
 	}
 
-	userRepository := repositories.NewUserRepository(request.Context(), l.dbPool)
+	ctx := request.Context()
 	// Проверим есть ли пользователь с таким логином
-	exists, err := userRepository.UserExists(body.Login)
+	exists, err := l.repository.UserExists(ctx, body.Login)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
@@ -71,7 +72,7 @@ func (l *Handlers) RegistrationHandler(response http.ResponseWriter, request *ht
 	}
 
 	// Создаём и регистрируем пользователя
-	user, err := l.createAndSaveUser(body, userRepository)
+	user, err := l.createAndSaveUser(ctx, body)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
@@ -145,12 +146,12 @@ func (l *Handlers) createUser(body *payloads.Register) (*models.User, error) {
 }
 
 // createAndSaveUser создаём и сохраняем нового пользователя
-func (l *Handlers) createAndSaveUser(body *payloads.Register, repository *repositories.UserRepository) (*models.User, error) {
+func (l *Handlers) createAndSaveUser(ctx context.Context, body *payloads.Register) (*models.User, error) {
 	user, err := l.createUser(body)
 	if err != nil {
 		return nil, err
 	}
-	if err = repository.CreateUser(user); err != nil {
+	if err = l.repository.CreateUser(ctx, user); err != nil {
 		return nil, err
 	}
 	return user, nil
@@ -187,8 +188,7 @@ func (l *Handlers) LoginHandler(response http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	userRepository := repositories.NewUserRepository(request.Context(), l.dbPool)
-	dbUser, exists, err := userRepository.GetUserByLogin(requestedUser.Login)
+	dbUser, exists, err := l.repository.GetUserByLogin(request.Context(), requestedUser.Login)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return

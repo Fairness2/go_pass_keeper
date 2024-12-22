@@ -72,6 +72,6 @@ func (g *JWTGenerator) Parse(tokenString string) (*jwt.Token, error) {
 		},
 		jwt.WithIssuer(g.issuer),
 		jwt.WithExpirationRequired(),
-		jwt.WithValidMethods([]string{"RS256"}),
+		jwt.WithValidMethods([]string{g.method.Alg()}),
 	)
 }
