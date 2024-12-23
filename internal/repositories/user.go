@@ -28,17 +28,17 @@ func NewUserRepository(db SQLExecutor) *UserRepository { // TODO заменит�
 }
 
 // UserExists проверяем наличие пользователя
-func (r *UserRepository) UserExists(ctx context.Context, login string) (bool, error) {
+func (r *UserRepository) UserExists(ctx context.Context, login string) error {
 	var exists bool
 	err := r.db.QueryRowContext(ctx, userExistsSQL, login).Scan(&exists)
 	// Если у нас нет записей, то возвращаем false
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		return false, nil
+		return ErrNotExist
 	}
 	if err != nil {
-		return false, err
+		return err
 	}
-	return exists, nil
+	return nil
 }
 
 // CreateUser вставляем нового пользователя и присваиваем ему id
@@ -53,16 +53,16 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *models.User) erro
 
 // GetUserByLogin извлекает пользователя на основе его логина из базы данных.
 // Возвращает пользователя, логическое значение, если найдено, и ошибку.
-func (r *UserRepository) GetUserByLogin(ctx context.Context, login string) (*models.User, bool, error) {
+func (r *UserRepository) GetUserByLogin(ctx context.Context, login string) (*models.User, error) {
 	var user models.User
 	err := r.db.QueryRowxContext(ctx, getUserByLoginSQL, login).StructScan(&user)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		return nil, false, nil
+		return nil, errors.Join(ErrNotExist, err)
 	}
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	return &user, true, nil
+	return &user, nil
 }
 
 // GetUserByID извлекает пользователя по его уникальному идентификатору из базы данных.

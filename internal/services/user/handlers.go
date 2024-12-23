@@ -10,7 +10,6 @@ import (
 	"passkeeper/internal/commonerrors"
 	"passkeeper/internal/config"
 	"passkeeper/internal/helpers"
-	"passkeeper/internal/logger"
 	"passkeeper/internal/models"
 	"passkeeper/internal/payloads"
 	"passkeeper/internal/repositories"
@@ -18,9 +17,21 @@ import (
 	"time"
 )
 
+var (
+	ErrUserAlreadyExists      = errors.New("user already exists")
+	ErrLoginPasswordIncorrect = errors.New("login or password is incorrect")
+	ErrBadRequest             = errors.New("bad request")
+)
+
+type repository interface {
+	UserExists(ctx context.Context, login string) error
+	CreateUser(ctx context.Context, user *models.User) error
+	GetUserByLogin(ctx context.Context, login string) (*models.User, error)
+}
+
 // Handlers для обработки запросов, связанных с регистрацией и аутентификацией пользователей.
 type Handlers struct {
-	repository             *repositories.UserRepository
+	repository             repository
 	jwtKeys                *config.Keys
 	tokenExpiration        time.Duration
 	refreshTokenExpiration time.Duration
@@ -61,13 +72,9 @@ func (l *Handlers) RegistrationHandler(response http.ResponseWriter, request *ht
 
 	ctx := request.Context()
 	// Проверим есть ли пользователь с таким логином
-	exists, err := l.repository.UserExists(ctx, body.Login)
+	err = l.userExists(ctx, body.Login)
 	if err != nil {
-		helpers.SetInternalError(err, response)
-		return
-	}
-	if exists {
-		helpers.ProcessResponseWithStatus("user already exists", http.StatusConflict, response)
+		helpers.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 
@@ -79,31 +86,44 @@ func (l *Handlers) RegistrationHandler(response http.ResponseWriter, request *ht
 	}
 
 	// Создаём токен для пользователя
-	tkn, err := l.createJWTToken(user, token.JWTTypeAccess, l.tokenExpiration)
-	if err != nil {
-		helpers.SetInternalError(err, response)
-		return
-	}
-	// Создаём рефреш токен для пользователя
-	refreshTkn, err := l.createJWTToken(user, token.JWTTypeRefresh, l.refreshTokenExpiration)
+	payload, err := l.createTokens(user)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
 	}
 
-	// Устанавливаем токен в ответ
-	payload := payloads.Authorization{Token: tkn, Refresh: refreshTkn}
+	l.setResponse(payload, response)
+}
+
+// setResponse — это метод, который записывает полезную нагрузку авторизации в ответ HTTP с соответствующими заголовками и статусом.
+func (l *Handlers) setResponse(payload payloads.Authorization, response http.ResponseWriter) {
 	responseBody, err := json.Marshal(payload)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
 	}
-
-	//response.Header().Set("Authorization", "Bearer "+tkn)
-
+	response.Header().Set("Authorization", "Bearer "+payload.Token)
 	if rErr := helpers.SetHTTPResponse(response, http.StatusOK, responseBody); rErr != nil {
-		logger.Log.Error(rErr)
+		helpers.SetInternalError(err, response)
 	}
+}
+
+// createTokens генерирует токены доступа и обновления для данного пользователя и возвращает их в полезных данных авторизации.
+func (l *Handlers) createTokens(user *models.User) (payloads.Authorization, error) {
+	// Создаём токен для пользователя
+	tkn, err := l.createJWTToken(user, token.JWTTypeAccess, l.tokenExpiration)
+	if err != nil {
+		return payloads.Authorization{}, err
+	}
+	// Создаём рефреш токен для пользователя
+	refreshTkn, err := l.createJWTToken(user, token.JWTTypeRefresh, l.refreshTokenExpiration)
+	if err != nil {
+		return payloads.Authorization{}, err
+	}
+	return payloads.Authorization{
+		Token:   tkn,
+		Refresh: refreshTkn,
+	}, nil
 }
 
 // getBody получаем тело для регистрации
@@ -126,7 +146,7 @@ func (l *Handlers) getBody(request *http.Request) (*payloads.Register, error) {
 	}
 
 	if !result {
-		return nil, &commonerrors.RequestError{InternalError: errors.New("bad request"), HTTPStatus: http.StatusBadRequest}
+		return nil, &commonerrors.RequestError{InternalError: ErrBadRequest, HTTPStatus: http.StatusBadRequest}
 	}
 
 	return &body, nil
@@ -188,51 +208,81 @@ func (l *Handlers) LoginHandler(response http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	dbUser, exists, err := l.repository.GetUserByLogin(request.Context(), requestedUser.Login)
+	dbUser, err := l.getUserByLogin(request.Context(), requestedUser.Login)
 	if err != nil {
-		helpers.SetInternalError(err, response)
-		return
-	}
-	if !exists {
-		helpers.ProcessResponseWithStatus("password and login are incorrect", http.StatusUnauthorized, response)
+		helpers.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 
-	ok, err := dbUser.CheckPasswordHash(requestedUser.PasswordHash)
+	err = l.checkPassword(dbUser, requestedUser.PasswordHash)
 	if err != nil {
-		helpers.SetInternalError(err, response)
-		return
-	}
-	if !ok {
-		helpers.ProcessResponseWithStatus("password and login are incorrect", http.StatusUnauthorized, response)
+		helpers.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 
 	// Создаём токен для пользователя
-	tkn, err := l.createJWTToken(dbUser, token.JWTTypeAccess, l.tokenExpiration)
+	payload, err := l.createTokens(dbUser)
 	if err != nil {
 		helpers.SetInternalError(err, response)
 		return
 	}
-	// Создаём рефреш токен для пользователя
-	refreshTkn, err := l.createJWTToken(dbUser, token.JWTTypeRefresh, l.refreshTokenExpiration)
+	l.setResponse(payload, response)
+}
+
+// checkPassword проверяет, соответствует ли предоставленный хэш пароля сохраненному хэшу пользователя.
+// Возвращает ошибку, если проверка не удалась или произошла внутренняя ошибка.
+func (l *Handlers) checkPassword(user *models.User, passwordHash string) error {
+	ok, err := user.CheckPasswordHash(passwordHash)
 	if err != nil {
-		helpers.SetInternalError(err, response)
-		return
+		return &commonerrors.RequestError{
+			InternalError: err,
+			HTTPStatus:    http.StatusInternalServerError,
+		}
 	}
+	if !ok {
+		return &commonerrors.RequestError{
+			InternalError: ErrLoginPasswordIncorrect,
+			HTTPStatus:    http.StatusUnauthorized,
+		}
+	}
+	return nil
+}
 
-	// Устанавливаем токен в ответ
-	payload := payloads.Authorization{Token: tkn, Refresh: refreshTkn}
-	responseBody, err := json.Marshal(payload)
+// getUserByLogin извлекает пользователя из репозитория, используя предоставленные учетные данные для входа.
+// Возвращает ошибку, если пользователь не существует или произошла внутренняя ошибка сервера.
+func (l *Handlers) getUserByLogin(ctx context.Context, login string) (*models.User, error) {
+	dbUser, err := l.repository.GetUserByLogin(ctx, login)
 	if err != nil {
-		helpers.SetInternalError(err, response)
-		return
+		if errors.Is(err, repositories.ErrNotExist) {
+			return nil, &commonerrors.RequestError{
+				InternalError: ErrLoginPasswordIncorrect,
+				HTTPStatus:    http.StatusUnauthorized,
+			}
+		}
+		return nil, &commonerrors.RequestError{
+			InternalError: err,
+			HTTPStatus:    http.StatusInternalServerError,
+		}
 	}
+	return dbUser, nil
+}
 
-	response.Header().Set("Authorization", "Bearer "+tkn)
-
-	if rErr := helpers.SetHTTPResponse(response, http.StatusOK, responseBody); rErr != nil {
-		logger.Log.Error(rErr)
-		helpers.SetInternalError(err, response)
+// userExists проверяет, существует ли в репозитории пользователь с указанным логином.
+// Возвращает ошибку конфликта, если пользователь существует, или внутреннюю ошибку сервера в случае других проблем.
+func (l *Handlers) userExists(ctx context.Context, login string) error {
+	// Проверим есть ли пользователь с таким логином
+	err := l.repository.UserExists(ctx, login)
+	if err != nil {
+		if errors.Is(err, repositories.ErrNotExist) {
+			return nil
+		}
+		return &commonerrors.RequestError{
+			InternalError: err,
+			HTTPStatus:    http.StatusInternalServerError,
+		}
+	}
+	return &commonerrors.RequestError{
+		InternalError: ErrUserAlreadyExists,
+		HTTPStatus:    http.StatusConflict,
 	}
 }

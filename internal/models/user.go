@@ -7,6 +7,11 @@ import (
 	"errors"
 )
 
+var (
+	ErrPasswordEmpty = errors.New("password key is empty")
+	ErrHashEmpty     = errors.New("hash key is empty")
+)
+
 // User представляет пользователя в системе.
 // ID — уникальный идентификатор пользователя.
 // Login — имя пользователя для входа.
@@ -22,10 +27,10 @@ type User struct {
 // GeneratePasswordHash создаём хэш пароля пользователя
 func (u *User) GeneratePasswordHash(hashKey string) error {
 	if u.Password == "" {
-		return errors.New("password key is empty")
+		return ErrPasswordEmpty
 	}
 	if hashKey == "" {
-		return errors.New("hash key is empty")
+		return ErrHashEmpty
 	}
 	harsher := hmac.New(sha256.New, []byte(hashKey))
 	harsher.Write([]byte(u.Password))

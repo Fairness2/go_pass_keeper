@@ -2,6 +2,7 @@ package token
 
 import (
 	"crypto/rsa"
+	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"passkeeper/internal/models"
@@ -12,6 +13,10 @@ import (
 const (
 	JWTTypeAccess  JWTType = "access"
 	JWTTypeRefresh JWTType = "refresh"
+)
+
+var (
+	ErrInvalidUser = errors.New("invalid user")
 )
 
 type JWTType = string
@@ -45,6 +50,9 @@ func NewJWTGenerator(pkey *rsa.PrivateKey, pubKey *rsa.PublicKey, expiration tim
 
 // Generate создание нового токена для пользователя
 func (g *JWTGenerator) Generate(user *models.User) (string, error) {
+	if user == nil || user.ID <= 0 {
+		return "", ErrInvalidUser
+	}
 	claims := JWTClaims{
 		TokenType: g.jwtType,
 		RegisteredClaims: jwt.RegisteredClaims{
