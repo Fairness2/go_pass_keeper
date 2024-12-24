@@ -16,7 +16,14 @@ import (
 
 // NewRouter конфигурация роутинга приложение
 func NewRouter(dbPool *database.DBPool, cnf *config.CliConfig) chi.Router {
-	lHandlers := user.NewHandlers(dbPool.DBx, cnf.JWTKeys, cnf.TokenExpiration, cnf.TokenExpiration, cnf.HashKey)
+	userCnf := user.HandlerConfig{
+		DBPool:                 dbPool.DBx,
+		JwtKeys:                cnf.JWTKeys,
+		TokenExpiration:        cnf.TokenExpiration,
+		RefreshTokenExpiration: cnf.TokenExpiration,
+		HashKey:                cnf.HashKey,
+	}
+	lHandlers := user.NewHandlers(userCnf)
 	pHandlers := content.NewPasswordService(dbPool.DBx)
 	tHandlers := content.NewTextService(dbPool.DBx)
 	cHandlers := content.NewCardService(dbPool.DBx)

@@ -2,7 +2,7 @@
 // Source: internal/repositories/executor.go
 
 // Package repositories is a generated GoMock package.
-package token
+package user
 
 import (
 	context "context"

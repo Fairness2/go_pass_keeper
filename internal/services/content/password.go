@@ -1,6 +1,7 @@
 package content
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
@@ -17,9 +18,16 @@ import (
 	"time"
 )
 
+type passwordRepository interface {
+	Create(ctx context.Context, content models.PasswordContent, comment models.Comment) error
+	GetByUserIDAndId(ctx context.Context, userID int64, id int64) (*models.PasswordContent, error)
+	GetByUserID(ctx context.Context, userID int64) ([]models.PasswordWithComment, error)
+	DeleteByUserIDAndID(ctx context.Context, userID int64, id int64) error
+}
+
 // PasswordService предоставляет методы для управления паролями пользователей и соответствующими комментариями в системе.
 type PasswordService struct {
-	repository *repositories.CrudRepository[models.PasswordContent, models.PasswordWithComment]
+	repository passwordRepository
 }
 
 // NewPasswordService инициализирует и возвращает новый экземпляр PasswordService, настроенный с использованием предоставленной базой.
@@ -33,7 +41,8 @@ func NewPasswordService(dbPool repositories.SQLExecutor) *PasswordService {
 // Он гарантирует корректность тела запроса, предотвращает предоставление идентификатора и связывает пароль с пользователем.
 func (s *PasswordService) SavePasswordHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	body, err := s.getSavePasswordBody(request)
+	var body payloads.SavePassword
+	err := getSaveBody(request, &body)
 	if err != nil {
 		helpers.ProcessRequestErrorWithBody(err, response)
 		return
@@ -65,29 +74,29 @@ func (s *PasswordService) SavePasswordHandler(response http.ResponseWriter, requ
 	}
 }
 
-// getSavePasswordBody анализирует и проверяет тело HTTP-запроса для извлечения полезных данных SavePassword или возвращает ошибку.
-func (s *PasswordService) getSavePasswordBody(request *http.Request) (*payloads.SavePassword, error) {
+// getSaveBody анализирует и проверяет тело HTTP-запроса для извлечения полезных данных SavePassword или возвращает ошибку.
+func getSaveBody(request *http.Request, body any) error {
 	// TODO валидация
 	// Читаем тело запроса
 	rawBody, err := io.ReadAll(request.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// Парсим тело в структуру запроса
-	var body payloads.SavePassword
-	err = json.Unmarshal(rawBody, &body)
+	err = json.Unmarshal(rawBody, body)
 	if err != nil {
-		return nil, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
+		return &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
 	}
 
-	return &body, nil
+	return nil
 }
 
 // UpdatePasswordHandler обрабатывает HTTP-запросы на обновление существующего пароля и связанного с ним комментария для аутентифицированного пользователя.
 // Он проверяет тело запроса, проверяет наличие пароля пользователя и обеспечивает правильную обработку обновлений.
 func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	body, err := s.getSavePasswordBody(request)
+	var body payloads.SavePassword
+	err := getSaveBody(request, &body)
 	if err != nil {
 		helpers.ProcessRequestErrorWithBody(err, response)
 		return

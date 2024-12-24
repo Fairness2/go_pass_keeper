@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"github.com/jmoiron/sqlx"
 	"passkeeper/internal/models"
 )
 
@@ -30,7 +29,7 @@ var TextSQLSet = SQLSet{
 // NewTextRepository создает новый экземпляр CrudRepository для управления текстовым содержимым и связанными комментариями в базе данных.
 func NewTextRepository(db SQLExecutor) *CrudRepository[models.TextContent, models.TextWithComment] {
 	return &CrudRepository[models.TextContent, models.TextWithComment]{
-		db:          db.(*sqlx.DB),
+		db:          db,
 		sqlSet:      TextSQLSet,
 		typeContent: models.TypeText,
 	}

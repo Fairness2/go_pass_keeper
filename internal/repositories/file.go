@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"github.com/jmoiron/sqlx"
 	"passkeeper/internal/models"
 )
 
@@ -30,7 +29,7 @@ var FileSQLSet = SQLSet{
 // NewFileRepository создает новый экземпляр CrudRepository для управления сущностями FileContent и FileWithComment в базе данных.
 func NewFileRepository(db SQLExecutor) *CrudRepository[models.FileContent, models.FileWithComment] {
 	return &CrudRepository[models.FileContent, models.FileWithComment]{
-		db:          db.(*sqlx.DB),
+		db:          db,
 		sqlSet:      FileSQLSet,
 		typeContent: models.TypeFile,
 	}

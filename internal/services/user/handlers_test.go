@@ -872,3 +872,28 @@ func TestLoginHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestNewHandlers(t *testing.T) {
+	ctr := gomock.NewController(t)
+	defer ctr.Finish()
+	tests := []struct {
+		name          string
+		expectedError bool
+		getConf       func() HandlerConfig
+	}{
+		{
+			name:          "successful_initialization",
+			expectedError: false,
+			getConf: func() HandlerConfig {
+				return HandlerConfig{DBPool: NewMockSQLExecutor(ctr)}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			service := NewHandlers(tt.getConf())
+			assert.NotNil(t, service, "NewTextService should not return nil")
+		})
+	}
+}

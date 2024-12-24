@@ -38,15 +38,23 @@ type Handlers struct {
 	hashKey                string
 }
 
+type HandlerConfig struct {
+	DBPool                 repositories.SQLExecutor
+	JwtKeys                *config.Keys
+	TokenExpiration        time.Duration
+	RefreshTokenExpiration time.Duration
+	HashKey                string
+}
+
 // NewHandlers инициализирует и возвращает новый экземпляр Handlers,
 // настроенный с указанным подключением к базе данных, ключами JWT, сроком действия токена и хэш-ключом.
-func NewHandlers(dbPool repositories.SQLExecutor, jwtKeys *config.Keys, tokenExpiration, refreshTokenExpiration time.Duration, hashKey string) *Handlers {
+func NewHandlers(conf HandlerConfig) *Handlers {
 	return &Handlers{
-		repository:             repositories.NewUserRepository(dbPool),
-		jwtKeys:                jwtKeys,
-		tokenExpiration:        tokenExpiration,
-		refreshTokenExpiration: refreshTokenExpiration,
-		hashKey:                hashKey,
+		repository:             repositories.NewUserRepository(conf.DBPool),
+		jwtKeys:                conf.JwtKeys,
+		tokenExpiration:        conf.TokenExpiration,
+		refreshTokenExpiration: conf.RefreshTokenExpiration,
+		hashKey:                conf.HashKey,
 	}
 }
 

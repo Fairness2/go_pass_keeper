@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"github.com/jmoiron/sqlx"
 	"passkeeper/internal/models"
 )
 
@@ -30,7 +29,7 @@ var CardSQLSet = SQLSet{
 // NewCardRepository инициализирует новый CrudRepository для CardContent и CardWithComment, используя предоставленный контекст и базу данных.
 func NewCardRepository(db SQLExecutor) *CrudRepository[models.CardContent, models.CardWithComment] {
 	return &CrudRepository[models.CardContent, models.CardWithComment]{
-		db:          db.(*sqlx.DB),
+		db:          db,
 		sqlSet:      CardSQLSet,
 		typeContent: models.TypeCard,
 	}

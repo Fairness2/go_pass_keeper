@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"errors"
-	"github.com/jmoiron/sqlx"
 	"passkeeper/internal/models"
 )
 
@@ -38,7 +37,7 @@ var PasswordSQLSet = SQLSet{
 // NewPasswordRepository создает и возвращает новый экземпляр CrudRepository для паролей с предоставленным контекстом и SQLExecutor
 func NewPasswordRepository(db SQLExecutor) *CrudRepository[models.PasswordContent, models.PasswordWithComment] {
 	return &CrudRepository[models.PasswordContent, models.PasswordWithComment]{
-		db:          db.(*sqlx.DB),
+		db:          db,
 		sqlSet:      PasswordSQLSet,
 		typeContent: models.TypePassword,
 	}

@@ -36,6 +36,21 @@ func (m *MockSQLExecutor) EXPECT() *MockSQLExecutorMockRecorder {
 	return m.recorder
 }
 
+// BeginTxx mocks base method.
+func (m *MockSQLExecutor) BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BeginTxx", ctx, opts)
+	ret0, _ := ret[0].(*sqlx.Tx)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BeginTxx indicates an expected call of BeginTxx.
+func (mr *MockSQLExecutorMockRecorder) BeginTxx(ctx, opts interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTxx", reflect.TypeOf((*MockSQLExecutor)(nil).BeginTxx), ctx, opts)
+}
+
 // NamedExecContext mocks base method.
 func (m *MockSQLExecutor) NamedExecContext(ctx context.Context, query string, arg interface{}) (sql.Result, error) {
 	m.ctrl.T.Helper()

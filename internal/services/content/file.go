@@ -1,6 +1,7 @@
 package content
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,9 +25,16 @@ var (
 	ErrEmptyName = errors.New("name is empty")
 )
 
+type fileRepository interface {
+	Create(ctx context.Context, content models.FileContent, comment models.Comment) error
+	GetByUserIDAndId(ctx context.Context, userID int64, id int64) (*models.FileContent, error)
+	GetByUserID(ctx context.Context, userID int64) ([]models.FileWithComment, error)
+	DeleteByUserIDAndID(ctx context.Context, userID int64, id int64) error
+}
+
 // FileService предоставляет методы для управления файлами пользователей и соответствующими комментариями в системе.
 type FileService struct {
-	repository *repositories.CrudRepository[models.FileContent, models.FileWithComment]
+	repository fileRepository
 	filePath   string
 }
 
@@ -129,7 +137,8 @@ func (s *FileService) deleteFile(filePath string, userID int64) error {
 // Он проверяет тело запроса, проверяет наличие пароля пользователя и обеспечивает правильную обработку обновлений.
 func (s *FileService) UpdateFileHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	body, err := s.getUpdateFileBody(request)
+	var body payloads.UpdateFile
+	err := getSaveBody(request, &body)
 	if err != nil {
 		helpers.ProcessRequestErrorWithBody(err, response)
 		return
@@ -173,23 +182,6 @@ func (s *FileService) UpdateFileHandler(response http.ResponseWriter, request *h
 	if err = s.repository.Create(ctx, info, comment); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
-}
-
-// getUpdateFileBody анализирует и проверяет тело HTTP-запроса для извлечения полезных данных обновления информации о файле или возвращает ошибку.
-func (s *FileService) getUpdateFileBody(request *http.Request) (*payloads.UpdateFile, error) {
-	// Читаем тело запроса
-	rawBody, err := io.ReadAll(request.Body)
-	if err != nil {
-		return nil, err
-	}
-	// Парсим тело в структуру запроса
-	var body payloads.UpdateFile
-	err = json.Unmarshal(rawBody, &body)
-	if err != nil {
-		return nil, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
-	}
-
-	return &body, nil
 }
 
 // GetUserFiles обрабатывает запросы HTTP GET для получения всех файлов и комментариев к ним для аутентифицированного пользователя.

@@ -1,12 +1,11 @@
 package content
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"io"
 	"net/http"
-	"passkeeper/internal/commonerrors"
 	"passkeeper/internal/helpers"
 	"passkeeper/internal/logger"
 	"passkeeper/internal/models"
@@ -17,9 +16,16 @@ import (
 	"time"
 )
 
+type cardRepository interface {
+	Create(ctx context.Context, content models.CardContent, comment models.Comment) error
+	GetByUserIDAndId(ctx context.Context, userID int64, id int64) (*models.CardContent, error)
+	GetByUserID(ctx context.Context, userID int64) ([]models.CardWithComment, error)
+	DeleteByUserIDAndID(ctx context.Context, userID int64, id int64) error
+}
+
 // CardService предоставляет методы для управления картами пользователей и соответствующими комментариями в системе.
 type CardService struct {
-	repository *repositories.CrudRepository[models.CardContent, models.CardWithComment]
+	repository cardRepository
 }
 
 // NewCardService инициализирует и возвращает новый экземпляр CardService, настроенный с использованием предоставленной базой.
@@ -33,7 +39,8 @@ func NewCardService(dbPool repositories.SQLExecutor) *CardService {
 // Он гарантирует корректность тела запроса, предотвращает предоставление идентификатора и связывает карту с пользователем.
 func (s *CardService) SaveCardHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	body, err := s.getSaveCardBody(request)
+	var body payloads.SaveCard
+	err := getSaveBody(request, &body)
 	if err != nil {
 		helpers.ProcessRequestErrorWithBody(err, response)
 		return
@@ -66,29 +73,12 @@ func (s *CardService) SaveCardHandler(response http.ResponseWriter, request *htt
 	}
 }
 
-// getSaveCardBody анализирует и проверяет тело HTTP-запроса для извлечения полезных данных SaveCard или возвращает ошибку.
-func (s *CardService) getSaveCardBody(request *http.Request) (*payloads.SaveCard, error) {
-	// TODO валидация
-	// Читаем тело запроса
-	rawBody, err := io.ReadAll(request.Body)
-	if err != nil {
-		return nil, err
-	}
-	// Парсим тело в структуру запроса
-	var body payloads.SaveCard
-	err = json.Unmarshal(rawBody, &body)
-	if err != nil {
-		return nil, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
-	}
-
-	return &body, nil
-}
-
 // UpdateCardHandler обрабатывает HTTP-запросы на обновление существующей карты и связанного с ним комментария для аутентифицированного пользователя.
 // Он проверяет тело запроса, проверяет наличие пароля пользователя и обеспечивает правильную обработку обновлений.
 func (s *CardService) UpdateCardHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	body, err := s.getSaveCardBody(request)
+	var body payloads.SaveCard
+	err := getSaveBody(request, &body)
 	if err != nil {
 		helpers.ProcessRequestErrorWithBody(err, response)
 		return

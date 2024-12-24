@@ -1,12 +1,11 @@
 package content
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"io"
 	"net/http"
-	"passkeeper/internal/commonerrors"
 	"passkeeper/internal/helpers"
 	"passkeeper/internal/logger"
 	"passkeeper/internal/models"
@@ -17,9 +16,16 @@ import (
 	"time"
 )
 
+type textRepository interface {
+	Create(ctx context.Context, content models.TextContent, comment models.Comment) error
+	GetByUserIDAndId(ctx context.Context, userID int64, id int64) (*models.TextContent, error)
+	GetByUserID(ctx context.Context, userID int64) ([]models.TextWithComment, error)
+	DeleteByUserIDAndID(ctx context.Context, userID int64, id int64) error
+}
+
 // TextService предоставляет методы для управления текстами пользователей и соответствующими комментариями в системе.
 type TextService struct {
-	repository *repositories.CrudRepository[models.TextContent, models.TextWithComment]
+	repository textRepository
 }
 
 // NewTextService инициализирует и возвращает новый экземпляр TextService, настроенный с использованием предоставленной базой.
@@ -33,7 +39,8 @@ func NewTextService(dbPool repositories.SQLExecutor) *TextService {
 // Он гарантирует корректность тела запроса, предотвращает предоставление идентификатора и связывает пароль с пользователем.
 func (s *TextService) SaveTextHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	body, err := s.getSaveTextBody(request)
+	var body payloads.SaveText
+	err := getSaveBody(request, &body)
 	if err != nil {
 		helpers.ProcessRequestErrorWithBody(err, response)
 		return
@@ -63,29 +70,12 @@ func (s *TextService) SaveTextHandler(response http.ResponseWriter, request *htt
 	}
 }
 
-// getSaveTextBody анализирует и проверяет тело HTTP-запроса для извлечения полезных данных SaveText или возвращает ошибку.
-func (s *TextService) getSaveTextBody(request *http.Request) (*payloads.SaveText, error) {
-	// TODO валидация
-	// Читаем тело запроса
-	rawBody, err := io.ReadAll(request.Body)
-	if err != nil {
-		return nil, err
-	}
-	// Парсим тело в структуру запроса
-	var body payloads.SaveText
-	err = json.Unmarshal(rawBody, &body)
-	if err != nil {
-		return nil, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
-	}
-
-	return &body, nil
-}
-
 // UpdateTextHandler обрабатывает HTTP-запросы на обновление существующего текста и связанного с ним комментария для аутентифицированного пользователя.
 // Он проверяет тело запроса, проверяет наличие пароля пользователя и обеспечивает правильную обработку обновлений.
 func (s *TextService) UpdateTextHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	body, err := s.getSaveTextBody(request)
+	var body payloads.SaveText
+	err := getSaveBody(request, &body)
 	if err != nil {
 		helpers.ProcessRequestErrorWithBody(err, response)
 		return
