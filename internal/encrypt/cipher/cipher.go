@@ -12,19 +12,19 @@ import (
 
 // Cipher — это структура, в которой хранится криптографический ключ для операций шифрования и дешифрования.
 type Cipher struct {
-	Key []byte
+	key []byte
 }
 
 // NewCipher инициализирует новый экземпляр Cipher с помощью криптографического ключа, полученного из предоставленного ключа.
 func NewCipher(key []byte) *Cipher {
 	return &Cipher{
-		Key: padKey(key),
+		key: padKey(key),
 	}
 }
 
 // Encrypt шифрует данный фрагмент байта с использованием AES-GCM со случайно сгенерированным одноразовым номером и возвращает зашифрованные данные.
 func (c *Cipher) Encrypt(body []byte) ([]byte, error) {
-	block, err := aes.NewCipher(c.Key)
+	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (c *Cipher) Encrypt(body []byte) ([]byte, error) {
 
 // Decrypt расшифровывает предоставленный фрагмент байта с помощью AES-GCM и возвращает открытый текст или ошибку, если расшифровка не удалась.
 func (c *Cipher) Decrypt(body []byte) ([]byte, error) {
-	block, err := aes.NewCipher(c.Key)
+	block, err := aes.NewCipher(c.key)
 	if err != nil {
 		return nil, err
 	}

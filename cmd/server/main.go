@@ -15,7 +15,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger.Log, err = logger.New(cnf.LogLevel)
+	_, err = logger.InitLogger(cnf.LogLevel)
 	if err != nil {
 		log.Fatal(err)
 	}
