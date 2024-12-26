@@ -35,10 +35,7 @@ func (r *UserRepository) UserExists(ctx context.Context, login string) error {
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		return ErrNotExist
 	}
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // CreateUser вставляем нового пользователя и присваиваем ему id

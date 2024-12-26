@@ -34,15 +34,19 @@ type fileRepository interface {
 
 // FileService предоставляет методы для управления файлами пользователей и соответствующими комментариями в системе.
 type FileService struct {
-	repository fileRepository
-	filePath   string
+	repository  fileRepository
+	filePath    string
+	permissions os.FileMode
+	maxFormSize int64
 }
 
 // NewFileService инициализирует и возвращает новый экземпляр FileService, настроенный с использованием предоставленной базой.
 func NewFileService(dbPool repositories.SQLExecutor, filePath string) *FileService {
 	return &FileService{
-		repository: repositories.NewFileRepository(dbPool),
-		filePath:   filePath,
+		repository:  repositories.NewFileRepository(dbPool),
+		filePath:    filePath,
+		permissions: os.ModePerm,
+		maxFormSize: 10 << 20,
 	}
 }
 
@@ -71,7 +75,7 @@ func (s *FileService) SaveFileHandler(response http.ResponseWriter, request *htt
 
 // getSaveFileBody анализирует и проверяет тело HTTP-запроса для извлечения полезных данных или возвращает ошибку.
 func (s *FileService) getSaveFileBody(request *http.Request, userID int64) (models.FileContent, models.Comment, error) {
-	err := request.ParseMultipartForm(10 << 20)
+	err := request.ParseMultipartForm(s.maxFormSize)
 	if err != nil {
 		return models.FileContent{}, models.Comment{}, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
 	}
@@ -107,7 +111,7 @@ func (s *FileService) getSaveFileBody(request *http.Request, userID int64) (mode
 func (s *FileService) saveFile(file io.Reader, userID int64) (string, error) {
 	newFileName := uuid.New().String()
 	dir := fmt.Sprintf("%s/%d", s.filePath, userID)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+	if err := os.MkdirAll(dir, s.permissions); err != nil {
 		return "", err
 	}
 	filePath := fmt.Sprintf("%s/%s", dir, newFileName)
@@ -236,11 +240,10 @@ func (s *FileService) DeleteUserFile(response http.ResponseWriter, request *http
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
 			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
-			return
 		} else {
 			helpers.SetInternalError(err, response)
-			return
 		}
+		return
 	}
 	if err = s.deleteFile(file.FilePath, user.ID); err != nil {
 		helpers.ProcessResponseWithStatus("Can`t delete file", http.StatusInternalServerError, response)

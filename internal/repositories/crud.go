@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/jmoiron/sqlx"
 	"passkeeper/internal/models"
 )
 
@@ -52,7 +51,7 @@ func (pr *CrudRepository[T, Y]) Create(ctx context.Context, content T, comment m
 }
 
 // createWithComment вставляет новый контент и связанный с ним комментарий в базу данных внутри транзакции.
-func (pr *CrudRepository[T, Y]) createWithComment(ctx context.Context, tx *sqlx.Tx, content T, comment models.Comment) error {
+func (pr *CrudRepository[T, Y]) createWithComment(ctx context.Context, tx ITX, content T, comment models.Comment) error {
 	smth, err := tx.PrepareNamed(pr.sqlSet.CreateContent)
 	if err != nil {
 		return err
@@ -70,7 +69,7 @@ func (pr *CrudRepository[T, Y]) createWithComment(ctx context.Context, tx *sqlx.
 }
 
 // updateWithComment обновляет информацию о контенте и связанный с ним комментарий в базе данных в рамках транзакции.
-func (pr *CrudRepository[T, Y]) updateWithComment(ctx context.Context, tx *sqlx.Tx, content T, comment models.Comment) error {
+func (pr *CrudRepository[T, Y]) updateWithComment(ctx context.Context, tx ITX, content T, comment models.Comment) error {
 	_, err := tx.NamedExecContext(ctx, pr.sqlSet.UpdateContent, content)
 	if err != nil {
 		return err

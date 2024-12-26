@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/go-chi/chi/v5"
 	cMiddleware "github.com/go-chi/chi/v5/middleware"
+	"passkeeper/internal/repositories"
 	"passkeeper/internal/services/content"
 	"passkeeper/internal/services/user"
 	"passkeeper/internal/token"
@@ -16,19 +17,20 @@ import (
 
 // NewRouter конфигурация роутинга приложение
 func NewRouter(dbPool *database.DBPool, cnf *config.CliConfig) chi.Router {
+	dbAdapter := repositories.NewDBAdapter(dbPool.DBx)
 	userCnf := user.HandlerConfig{
-		DBPool:                 dbPool.DBx,
+		DBPool:                 dbAdapter,
 		JwtKeys:                cnf.JWTKeys,
 		TokenExpiration:        cnf.TokenExpiration,
 		RefreshTokenExpiration: cnf.TokenExpiration,
 		HashKey:                cnf.HashKey,
 	}
 	lHandlers := user.NewHandlers(userCnf)
-	pHandlers := content.NewPasswordService(dbPool.DBx)
-	tHandlers := content.NewTextService(dbPool.DBx)
-	cHandlers := content.NewCardService(dbPool.DBx)
-	fHandlers := content.NewFileService(dbPool.DBx, cnf.UploadPath)
-	authenticator := token.NewAuthenticator(dbPool.DBx, cnf.JWTKeys, cnf.TokenExpiration)
+	pHandlers := content.NewPasswordService(dbAdapter)
+	tHandlers := content.NewTextService(dbAdapter)
+	cHandlers := content.NewCardService(dbAdapter)
+	fHandlers := content.NewFileService(dbAdapter, cnf.UploadPath)
+	authenticator := token.NewAuthenticator(dbAdapter, cnf.JWTKeys, cnf.TokenExpiration)
 
 	router := chi.NewRouter()
 	// Устанавливаем мидлваре
