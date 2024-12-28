@@ -8,6 +8,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	ErrNoPrivateKey = errors.New("no private key path specified")
+	ErrNoPublicKey  = errors.New("no public key path specified")
+)
+
 // NewConfig инициализирует новую консольную конфигурацию, обрабатывает аргументы командной строки
 func NewConfig() (*CliConfig, error) {
 	// Регистрируем новое хранилище
@@ -40,10 +45,10 @@ func parseKeys(privateKey, publicKey string) (*Keys, error) {
 // parseRSAKeys получаем ключи для JWT токенов
 func parseRSAKeys(privateKey string, publicKey string) (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	if privateKey == "" {
-		return nil, nil, errors.New("no private key path specified")
+		return nil, nil, ErrNoPrivateKey
 	}
 	if publicKey == "" {
-		return nil, nil, errors.New("no public key path specified")
+		return nil, nil, ErrNoPublicKey
 	}
 
 	pkey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privateKey))
@@ -61,9 +66,7 @@ func parseRSAKeys(privateKey string, publicKey string) (*rsa.PrivateKey, *rsa.Pu
 
 // parseFromViper анализирует конфигурацию из переменных среды и аргументов командной строки с помощью Viper.
 func parseFromViper(cnf *CliConfig) error {
-	if err := bindEnv(); err != nil {
-		return err
-	}
+	bindEnv()
 	if err := bindArg(); err != nil {
 		return err
 	}
@@ -72,32 +75,15 @@ func parseFromViper(cnf *CliConfig) error {
 }
 
 // bindEnv привязывает переменные среды к ключам конфигурации Viper, гарантируя, что каждая привязка проверяется на наличие ошибок.
-func bindEnv() error {
-	if err := viper.BindEnv("Address", "RUN_ADDRESS"); err != nil {
-		return err
-	}
-	if err := viper.BindEnv("LogLevel", "LOG_LEVEL"); err != nil {
-		return err
-	}
-	if err := viper.BindEnv("DatabaseDSN", "DATABASE_URI"); err != nil {
-		return err
-	}
-	if err := viper.BindEnv("HashKey", "KEY"); err != nil {
-		return err
-	}
-	if err := viper.BindEnv("PrivateJWTKey", "JPKEY"); err != nil {
-		return err
-	}
-	if err := viper.BindEnv("PublicJWTKey", "JPUKEY"); err != nil {
-		return err
-	}
-	if err := viper.BindEnv("TokenExpiration", "TOKEN_EXPIRATION"); err != nil {
-		return err
-	}
-	if err := viper.BindEnv("UploadPath", "UPLOAD_PATH"); err != nil {
-		return err
-	}
-	return nil
+func bindEnv() {
+	viper.MustBindEnv("Address", "RUN_ADDRESS")
+	viper.MustBindEnv("LogLevel", "LOG_LEVEL")
+	viper.MustBindEnv("DatabaseDSN", "DATABASE_URI")
+	viper.MustBindEnv("HashKey", "KEY")
+	viper.MustBindEnv("PrivateJWTKey", "JPKEY")
+	viper.MustBindEnv("PublicJWTKey", "JPUKEY")
+	viper.MustBindEnv("TokenExpiration", "TOKEN_EXPIRATION")
+	viper.MustBindEnv("UploadPath", "UPLOAD_PATH")
 }
 
 // bindArg привязывает аргументы командной строки к ключам конфигурации и устанавливает значения по умолчанию с помощью библиотек pflag и viper.
