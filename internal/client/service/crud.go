@@ -8,13 +8,14 @@ import (
 	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/encrypt/cipher"
+	"passkeeper/internal/payloads"
 )
 
 // Encryptable определяет методы шифрования и дешифрования данных с использованием предоставленного шифра.
 // Объекты, реализующие этот интерфейс, могут безопасно трансформировать свое внутреннее состояние.
 type Encryptable interface {
-	Encrypt(*cipher.Cipher) error
-	Decrypt(*cipher.Cipher) error
+	Encrypt(payloads.Encrypter) error
+	Decrypt(payloads.Decrypter) error
 }
 
 // CRUDService предоставляет базовые операции CRUD для зашифрованных данных с использованием клиента сервера и учетных данных пользователя.

@@ -1,7 +1,5 @@
 package payloads
 
-import "passkeeper/internal/encrypt/cipher"
-
 // UpdateFile представляет собой полезную нагрузку запроса для обновления информации о файле, такой как его имя или связанный комментарий.
 type UpdateFile struct {
 	ID      int64  `json:"id,omitempty"`
@@ -17,7 +15,8 @@ type FileWithComment struct {
 	Comment string `json:"comment"`
 }
 
-func (item *FileWithComment) Encrypt(ch *cipher.Cipher) error {
+// Encrypt шифрует поле имени FileWithComment, используя предоставленный шифратор. Возвращает ошибку, если шифрование не удалось.
+func (item *FileWithComment) Encrypt(ch Encrypter) error {
 	eName, err := ch.Encrypt(item.Name)
 	if err != nil {
 		return err
@@ -26,7 +25,8 @@ func (item *FileWithComment) Encrypt(ch *cipher.Cipher) error {
 	return nil
 }
 
-func (item *FileWithComment) Decrypt(ch *cipher.Cipher) error {
+// Decrypt расшифровывает поле имени FileWithComment, используя предоставленный дешифратор. Возвращает ошибку, если расшифровка не удалась.
+func (item *FileWithComment) Decrypt(ch Decrypter) error {
 	dName, err := ch.Decrypt(item.Name)
 	if err != nil {
 		return err

@@ -30,9 +30,9 @@ func New(cnf *config.CliConfig) error {
 	// Вызываем функцию закрытия базы данных
 	defer pool.Close()
 	// Производим миграции базы
-	if err = pool.Migrate(); err != nil {
+	/*if err = pool.Migrate(); err != nil {
 		return err
-	}
+	}*/
 
 	wg := new(errgroup.Group)
 	serv := server.NewServer(ctx, router.NewRouter(pool, cnf), cnf.Address)

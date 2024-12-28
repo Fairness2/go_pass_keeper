@@ -1,7 +1,5 @@
 package payloads
 
-import "passkeeper/internal/encrypt/cipher"
-
 // SaveCard представляет сохраненные данные карты вместе с комментариями пользователя.
 type SaveCard struct {
 	ID      int64  `json:"id,omitempty"`
@@ -27,7 +25,7 @@ type CardWithComment struct {
 	Comment string `json:"comment"`
 }
 
-func (item *CardWithComment) Encrypt(ch *cipher.Cipher) error {
+func (item *CardWithComment) Encrypt(ch Encrypter) error {
 	eNumber, err := ch.Encrypt(item.Number)
 	if err != nil {
 		return err
@@ -57,7 +55,7 @@ func (item *CardWithComment) Encrypt(ch *cipher.Cipher) error {
 	return nil
 }
 
-func (item *CardWithComment) Decrypt(ch *cipher.Cipher) error {
+func (item *CardWithComment) Decrypt(ch Decrypter) error {
 	dNumber, err := ch.Decrypt(item.Number)
 	if err != nil {
 		return err

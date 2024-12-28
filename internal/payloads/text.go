@@ -1,7 +1,5 @@
 package payloads
 
-import "passkeeper/internal/encrypt/cipher"
-
 // SaveText представляет собой структуру для получения текстовых данных с необязательным комментарием и идентификатором.
 type SaveText struct {
 	ID       int64  `json:"id,omitempty"`
@@ -21,7 +19,8 @@ type TextWithComment struct {
 	Comment string `json:"comment"`
 }
 
-func (item *TextWithComment) Encrypt(ch *cipher.Cipher) error {
+// Encrypt шифрует поле TextData структуры TextWithComment, используя предоставленную реализацию Encrypter.
+func (item *TextWithComment) Encrypt(ch Encrypter) error {
 	eText, err := ch.Encrypt(item.TextData)
 	if err != nil {
 		return err
@@ -30,7 +29,8 @@ func (item *TextWithComment) Encrypt(ch *cipher.Cipher) error {
 	return nil
 }
 
-func (item *TextWithComment) Decrypt(ch *cipher.Cipher) error {
+// Decrypt расшифровывает поле TextData структуры TextWithComment, используя предоставленную реализацию Decrypter.
+func (item *TextWithComment) Decrypt(ch Decrypter) error {
 	eText, err := ch.Decrypt(item.TextData)
 	if err != nil {
 		return err
