@@ -41,17 +41,17 @@ func NewPasswordService(dbPool repositories.SQLExecutor) *PasswordService {
 // SavePasswordHandler обрабатывает HTTP-запросы на сохранение нового пароля вместе с дополнительным комментарием для аутентифицированного пользователя.
 // Он гарантирует корректность тела запроса, предотвращает предоставление идентификатора и связывает пароль с пользователем.
 //
-// @Summary Сохранить пользовательский пароль с комментарием
-// @Description Создает новую запись о пароле вместе с необязательным комментарием для аутентифицированного пользователя.
-// @Tags text
-// @Accept json
-// @Produce json
-// @Param data body payloads.SavePassword true "Password data and comment"
-// @Success 200 {string}
-// @Failure 400 {object} payloads.ErrorResponseBody "Invalid input or bad request"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authenticated"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/password [post]
+//	@Summary		Сохранить пользовательский пароль с комментарием
+//	@Description	Создает новую запись о пароле вместе с необязательным комментарием для аутентифицированного пользователя.
+//	@Tags			text
+//	@Accept			json
+//	@Produce		json
+//	@Param			data	body	payloads.SavePassword	true	"Password data and comment"
+//	@Success		200
+//	@Failure		400	{object}	payloads.ErrorResponseBody	"Invalid input or bad request"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authenticated"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/password [post]
 func (s *PasswordService) SavePasswordHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
 	var body payloads.SavePassword
@@ -107,18 +107,18 @@ func getSaveBody(request *http.Request, body any) error {
 // UpdatePasswordHandler обрабатывает HTTP-запросы на обновление существующего пароля и связанного с ним комментария для аутентифицированного пользователя.
 // Он проверяет тело запроса, проверяет наличие пароля пользователя и обеспечивает правильную обработку обновлений.
 //
-// @Summary Обновить пароль пользователя с комментарием
-// @Description Обновляет существующий пароль вместе с комментарием для аутентифицированного пользователя. Гарантирует существование пароля и обрабатывает проверку.
-// @Tags password
-// @Accept json
-// @Produce json
-// @Param data body payloads.SavePassword true "Updated password data and comment"
-// @Success 200 {string}
-// @Failure 400 {object} payloads.ErrorResponseBody "Invalid input or bad request"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authenticated"
-// @Failure 404 {object} payloads.ErrorResponseBody "Password not found"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/password [put]
+//	@Summary		Обновить пароль пользователя с комментарием
+//	@Description	Обновляет существующий пароль вместе с комментарием для аутентифицированного пользователя. Гарантирует существование пароля и обрабатывает проверку.
+//	@Tags			password
+//	@Accept			json
+//	@Produce		json
+//	@Param			data	body	payloads.SavePassword	true	"Updated password data and comment"
+//	@Success		200
+//	@Failure		400	{object}	payloads.ErrorResponseBody	"Invalid input or bad request"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authenticated"
+//	@Failure		404	{object}	payloads.ErrorResponseBody	"Password not found"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/password [put]
 func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
 	var body payloads.SavePassword
@@ -173,15 +173,15 @@ func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, re
 // GetUserPasswords обрабатывает запросы HTTP GET для получения всех паролей и комментариев к ним для аутентифицированного пользователя.
 // Он извлекает пользователя из контекста запроса, извлекает соответствующие пароли из репозитория и возвращает их в формате JSON.
 //
-// @Summary Получить пароли пользователей с комментариями
-// @Description Получает список паролей и связанных с ними комментариев для аутентифицированного пользователя.
-// @Tags password
-// @Accept json
-// @Produce json
-// @Success 200 {array} payloads.PasswordWithComment "Array of user passwords with comments"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authorized"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/password [get]
+//	@Summary		Получить пароли пользователей с комментариями
+//	@Description	Получает список паролей и связанных с ними комментариев для аутентифицированного пользователя.
+//	@Tags			password
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}		payloads.PasswordWithComment	"Array of user passwords with comments"
+//	@Failure		401	{object}	payloads.ErrorResponseBody		"User not authorized"
+//	@Failure		500	{object}	payloads.ErrorResponseBody		"Internal server error"
+//	@Router			/api/content/password [get]
 func (s *PasswordService) GetUserPasswords(response http.ResponseWriter, request *http.Request) {
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
@@ -219,16 +219,16 @@ func (s *PasswordService) GetUserPasswords(response http.ResponseWriter, request
 // DeleteUserPasswords обрабатывает удаление записи пароля пользователя по его идентификатору.
 // Проверяет аутентификацию пользователя и гарантирует, что идентификатор пароля правильно анализируется из запроса.
 //
-// @Summary Удалить пароль пользователя
-// @Description Удаляет пароль пользователя по его идентификатору. Гарантирует, что пользователь аутентифицирован и идентификатор пароля корректен.
-// @Tags password
-// @Param id path string true "Password ID"
-// @Produce json
-// @Success 200 {string}
-// @Failure 400 {object} payloads.ErrorResponseBody "Invalid password ID"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authenticated"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/password/{id} [delete]
+//	@Summary		Удалить пароль пользователя
+//	@Description	Удаляет пароль пользователя по его идентификатору. Гарантирует, что пользователь аутентифицирован и идентификатор пароля корректен.
+//	@Tags			password
+//	@Param			id	path	string	true	"Password ID"
+//	@Produce		json
+//	@Success		200
+//	@Failure		400	{object}	payloads.ErrorResponseBody	"Invalid password ID"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authenticated"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/password/{id} [delete]
 func (s *PasswordService) DeleteUserPasswords(response http.ResponseWriter, request *http.Request) {
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)

@@ -54,19 +54,19 @@ func NewFileService(dbPool repositories.SQLExecutor, filePath string) *FileServi
 // SaveFileHandler обрабатывает HTTP-запросы на сохранение нового файла вместе с дополнительным комментарием для аутентифицированного пользователя.
 // Он гарантирует корректность тела запроса, предотвращает предоставление идентификатора и связывает пароль с пользователем.
 //
-// @Summary Сохраните новый файл с необязательным комментарием.
-// @Description Сохраняет новый файл для аутентифицированного пользователя. Запрос должен включать составной файл, имя и необязательный комментарий.
-// @Tags file
-// @Accept multipart/form-data
-// @Produce application/json
-// @Param file formData file true "File to upload"
-// @Param name formData string true "Name of the file"
-// @Param comment formData string false "Optional comment for the file"
-// @Success 200
-// @Failure 400 {object} payloads.ErrorResponseBody "Invalid input or bad request"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authenticated"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/files [post]
+//	@Summary		Сохраните новый файл с необязательным комментарием.
+//	@Description	Сохраняет новый файл для аутентифицированного пользователя. Запрос должен включать составной файл, имя и необязательный комментарий.
+//	@Tags			file
+//	@Accept			multipart/form-data
+//	@Produce		application/json
+//	@Param			file	formData	file	true	"File to upload"
+//	@Param			name	formData	string	true	"Name of the file"
+//	@Param			comment	formData	string	false	"Optional comment for the file"
+//	@Success		200
+//	@Failure		400	{object}	payloads.ErrorResponseBody	"Invalid input or bad request"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authenticated"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/files [post]
 func (s *FileService) SaveFileHandler(response http.ResponseWriter, request *http.Request) {
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
@@ -155,18 +155,18 @@ func (s *FileService) deleteFile(filePath string, userID int64) error {
 // UpdateFileHandler обрабатывает HTTP-запросы на обновление существующего файла и связанного с ним комментария для аутентифицированного пользователя.
 // Он проверяет тело запроса, проверяет наличие пароля пользователя и обеспечивает правильную обработку обновлений.
 //
-// @Summary Обновить файл пользователя с комментарием
-// @Description Обновляет существующий файл вместе с комментарием для аутентифицированного пользователя. Гарантирует существование файла и обрабатывает проверку.
-// @Tags files
-// @Accept json
-// @Produce json
-// @Param data body payloads.UpdateFile true "Updated file data and comment"
-// @Success 200 {string}
-// @Failure 400 {object} payloads.ErrorResponseBody "Invalid input or bad request"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authenticated"
-// @Failure 404 {object} payloads.ErrorResponseBody "File not found"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/file [put]
+//	@Summary		Обновить файл пользователя с комментарием
+//	@Description	Обновляет существующий файл вместе с комментарием для аутентифицированного пользователя. Гарантирует существование файла и обрабатывает проверку.
+//	@Tags			files
+//	@Accept			json
+//	@Produce		json
+//	@Param			data	body	payloads.UpdateFile	true	"Updated file data and comment"
+//	@Success		200
+//	@Failure		400	{object}	payloads.ErrorResponseBody	"Invalid input or bad request"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authenticated"
+//	@Failure		404	{object}	payloads.ErrorResponseBody	"File not found"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/file [put]
 func (s *FileService) UpdateFileHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
 	var body payloads.UpdateFile
@@ -219,15 +219,15 @@ func (s *FileService) UpdateFileHandler(response http.ResponseWriter, request *h
 // GetUserFiles обрабатывает запросы HTTP GET для получения всех файлов и комментариев к ним для аутентифицированного пользователя.
 // Он извлекает пользователя из контекста запроса, извлекает соответствующие тексты из репозитория и возвращает их в формате JSON.
 //
-// @Summary Получить файлы пользователей с комментариями
-// @Description Получает список файлов и связанных с ними комментариев для аутентифицированного пользователя.
-// @Tags file
-// @Accept json
-// @Produce json
-// @Success 200 {array} payloads.FileWithComment "Array of user files with comments"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authorized"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/file [get]
+//	@Summary		Получить файлы пользователей с комментариями
+//	@Description	Получает список файлов и связанных с ними комментариев для аутентифицированного пользователя.
+//	@Tags			file
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}		payloads.FileWithComment	"Array of user files with comments"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authorized"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/file [get]
 func (s *FileService) GetUserFiles(response http.ResponseWriter, request *http.Request) {
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
@@ -261,16 +261,16 @@ func (s *FileService) GetUserFiles(response http.ResponseWriter, request *http.R
 // DeleteUserFile обрабатывает удаление записи файла пользователя по его идентификатору.
 // Проверяет аутентификацию пользователя и гарантирует, что идентификатор пароля правильно анализируется из запроса.
 //
-// @Summary Удалить файл пользователя
-// @Description Удаляет файл пользователя по его идентификатору. Гарантирует, что пользователь аутентифицирован и идентификатор файла корректен.
-// @Tags file
-// @Param id path string true "File ID"
-// @Produce json
-// @Success 200 {string}
-// @Failure 400 {object} payloads.ErrorResponseBody "Invalid file ID"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authenticated"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/file/{id} [delete]
+//	@Summary		Удалить файл пользователя
+//	@Description	Удаляет файл пользователя по его идентификатору. Гарантирует, что пользователь аутентифицирован и идентификатор файла корректен.
+//	@Tags			file
+//	@Param			id	path	string	true	"File ID"
+//	@Produce		json
+//	@Success		200
+//	@Failure		400	{object}	payloads.ErrorResponseBody	"Invalid file ID"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authenticated"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/file/{id} [delete]
 func (s *FileService) DeleteUserFile(response http.ResponseWriter, request *http.Request) {
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
@@ -307,17 +307,17 @@ func (s *FileService) DeleteUserFile(response http.ResponseWriter, request *http
 
 // DownloadFileHandler обрабатывает запросы на загрузку файлов для авторизованных пользователей, получая и предоставляя запрошенный файл.
 //
-// @Summary Загрузите файл пользователя
-// @Description Позволяет аутентифицированному пользователю загружать файл по его идентификатору.
-// @Tags file
-// @Param id path string true "File ID"
-// @Produce octet-stream
-// @Success 200 {string}
-// @Failure 400 {object} payloads.ErrorResponseBody "Invalid file ID"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authenticated"
-// @Failure 404 {object} payloads.ErrorResponseBody "File not found"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/file/download/{id} [get]
+//	@Summary		Загрузите файл пользователя
+//	@Description	Позволяет аутентифицированному пользователю загружать файл по его идентификатору.
+//	@Tags			file
+//	@Param			id	path	string	true	"File ID"
+//	@Produce		octet-stream
+//	@Success		200
+//	@Failure		400	{object}	payloads.ErrorResponseBody	"Invalid file ID"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authenticated"
+//	@Failure		404	{object}	payloads.ErrorResponseBody	"File not found"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/file/download/{id} [get]
 func (s *FileService) DownloadFileHandler(response http.ResponseWriter, request *http.Request) {
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)

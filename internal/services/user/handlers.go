@@ -59,17 +59,19 @@ func NewHandlers(conf HandlerConfig) *Handlers {
 }
 
 // RegistrationHandler обрабатывает регистрацию новых пользователей, включая проверку, создание и генерацию токенов.
-// @Summary Регистрация нового пользователя
-// @Description обрабатывает регистрацию новых пользователей, включая проверку, создание и генерацию токенов.
-// @Tags Пользователь
-// @Accept json
-// @Produce json
-// @Param register body payloads.Register true "Register Payload"
-// @Success 200 {object} payloads.Authorization
-// @Failure 400 {object} payloads.ErrorResponseBody
-// @Failure 409 {object} payloads.ErrorResponseBody
-// @Failure 500 {object} payloads.ErrorResponseBody
-// @Router /api/user/register [post]
+//
+//	@Summary		Регистрация нового пользоват
+//	@Summary		Регистрация нового пользователя
+//	@Description	обрабатывает регистрацию новых пользователей, включая проверку, создание и генерацию токенов.
+//	@Tags			Пользователь
+//	@Accept			json
+//	@Produce		json
+//	@Param			register	body		payloads.Register	true	"Register Payload"
+//	@Success		200			{object}	payloads.Authorization
+//	@Failure		400			{object}	payloads.ErrorResponseBody
+//	@Failure		409			{object}	payloads.ErrorResponseBody
+//	@Failure		500			{object}	payloads.ErrorResponseBody
+//	@Router			/api/user/register [post]
 func (l *Handlers) RegistrationHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
 	body, err := l.getBody(request)
@@ -191,18 +193,21 @@ func (l *Handlers) createJWTToken(user *models.User, tokenType token.JWTType, ex
 	return generator.Generate(user)
 }
 
+теля в систему, проверяя учетные данные и генерируя токен авторизации.
+//
+//	@Summary		Вход пользователя в систе
 // LoginHandler обрабатывает вход пользователя в систему, проверяя учетные данные и генерируя токен авторизации.
-// @Summary Вход пользователя в систему
-// @Description обрабатывает вход пользователя в систему, проверяя учетные данные и генерируя токен авторизации.
-// @Tags Пользователь
-// @Accept json
-// @Produce json
-// @Param login body payloads.Register true "Login Payload"
-// @Success 200 {object} payloads.Authorization
-// @Failure 400 {object} payloads.ErrorResponseBody
-// @Failure 401 {object} payloads.ErrorResponseBody
-// @Failure 500 {object} payloads.ErrorResponseBody
-// @Router /api/user/login [post]
+//	@Summary		Вход пользователя в систему
+//	@Description	обрабатывает вход пользователя в систему, проверяя учетные данные и генерируя токен авторизации.
+//	@Tags			Пользователь
+//	@Accept			json
+//	@Produce		json
+//	@Param			login	body		payloads.Register	true	"Login Payload"
+//	@Success		200		{object}	payloads.Authorization
+//	@Failure		400		{object}	payloads.ErrorResponseBody
+//	@Failure		401		{object}	payloads.ErrorResponseBody
+//	@Failure		500		{object}	payloads.ErrorResponseBody
+//	@Router			/api/user/login [post]
 func (l *Handlers) LoginHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
 	body, err := l.getBody(request)

@@ -39,17 +39,17 @@ func NewTextService(dbPool repositories.SQLExecutor) *TextService {
 // SaveTextHandler обрабатывает HTTP-запросы на сохранение нового текста вместе с дополнительным комментарием для аутентифицированного пользователя.
 // Он гарантирует корректность тела запроса, предотвращает предоставление идентификатора и связывает пароль с пользователем.
 //
-// @Summary Сохранить пользовательский текст с комментарием
-// @Description Создает новую текстовую запись вместе с необязательным комментарием для аутентифицированного пользователя.
-// @Tags text
-// @Accept json
-// @Produce json
-// @Param data body payloads.SaveText true "Text data and comment"
-// @Success 200 {string}
-// @Failure 400 {object} payloads.ErrorResponseBody "Invalid input or bad request"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authenticated"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/text [post]
+//	@Summary		Сохранить пользовательский текст с комментарием
+//	@Description	Создает новую текстовую запись вместе с необязательным комментарием для аутентифицированного пользователя.
+//	@Tags			text
+//	@Accept			json
+//	@Produce		json
+//	@Param			data	body	payloads.SaveText	true	"Text data and comment"
+//	@Success		200
+//	@Failure		400	{object}	payloads.ErrorResponseBody	"Invalid input or bad request"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authenticated"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/text [post]
 func (s *TextService) SaveTextHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
 	var body payloads.SaveText
@@ -86,18 +86,18 @@ func (s *TextService) SaveTextHandler(response http.ResponseWriter, request *htt
 // UpdateTextHandler обрабатывает HTTP-запросы на обновление существующего текста и связанного с ним комментария для аутентифицированного пользователя.
 // Он проверяет тело запроса, проверяет наличие пароля пользователя и обеспечивает правильную обработку обновлений.
 //
-// @Summary Обновить текст пользователя с комментарием
-// @Description Обновляет существующий текст вместе с комментарием для аутентифицированного пользователя. Гарантирует существование текста и обрабатывает проверку.
-// @Tags text
-// @Accept json
-// @Produce json
-// @Param data body payloads.SaveText true "Updated text data and comment"
-// @Success 200 {string}
-// @Failure 400 {object} payloads.ErrorResponseBody "Invalid input or bad request"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authenticated"
-// @Failure 404 {object} payloads.ErrorResponseBody "Text not found"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/text [put]
+//	@Summary		Обновить текст пользователя с комментарием
+//	@Description	Обновляет существующий текст вместе с комментарием для аутентифицированного пользователя. Гарантирует существование текста и обрабатывает проверку.
+//	@Tags			text
+//	@Accept			json
+//	@Produce		json
+//	@Param			data	body	payloads.SaveText	true	"Updated text data and comment"
+//	@Success		200
+//	@Failure		400	{object}	payloads.ErrorResponseBody	"Invalid input or bad request"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authenticated"
+//	@Failure		404	{object}	payloads.ErrorResponseBody	"Text not found"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/text [put]
 func (s *TextService) UpdateTextHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
 	var body payloads.SaveText
@@ -150,15 +150,15 @@ func (s *TextService) UpdateTextHandler(response http.ResponseWriter, request *h
 // GetUserTexts обрабатывает запросы HTTP GET для получения всех текстов и комментариев к ним для аутентифицированного пользователя.
 // Он извлекает пользователя из контекста запроса, извлекает соответствующие тексты из репозитория и возвращает их в формате JSON.
 //
-// @Summary Получить тексты пользователей с комментариями
-// @Description Получает список текстов и связанных с ними комментариев для аутентифицированного пользователя.
-// @Tags text
-// @Accept json
-// @Produce json
-// @Success 200 {array} payloads.TextWithComment "Array of user texts with comments"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authorized"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/text [get]
+//	@Summary		Получить тексты пользователей с комментариями
+//	@Description	Получает список текстов и связанных с ними комментариев для аутентифицированного пользователя.
+//	@Tags			text
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}		payloads.TextWithComment	"Array of user texts with comments"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authorized"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/text [get]
 func (s *TextService) GetUserTexts(response http.ResponseWriter, request *http.Request) {
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
@@ -194,16 +194,16 @@ func (s *TextService) GetUserTexts(response http.ResponseWriter, request *http.R
 // DeleteUserText обрабатывает удаление записи текста пользователя по его идентификатору.
 // Проверяет аутентификацию пользователя и гарантирует, что идентификатор пароля правильно анализируется из запроса.
 //
-// @Summary Удалить текст пользователя
-// @Description Удаляет текст пользователя по его идентификатору. Гарантирует, что пользователь аутентифицирован и идентификатор текста корректен.
-// @Tags text
-// @Param id path string true "Text ID"
-// @Produce json
-// @Success 200 {string}
-// @Failure 400 {object} payloads.ErrorResponseBody "Invalid text ID"
-// @Failure 401 {object} payloads.ErrorResponseBody "User not authenticated"
-// @Failure 500 {object} payloads.ErrorResponseBody "Internal server error"
-// @Router /content/text/{id} [delete]
+//	@Summary		Удалить текст пользователя
+//	@Description	Удаляет текст пользователя по его идентификатору. Гарантирует, что пользователь аутентифицирован и идентификатор текста корректен.
+//	@Tags			text
+//	@Param			id	path	string	true	"Text ID"
+//	@Produce		json
+//	@Success		200
+//	@Failure		400	{object}	payloads.ErrorResponseBody	"Invalid text ID"
+//	@Failure		401	{object}	payloads.ErrorResponseBody	"User not authenticated"
+//	@Failure		500	{object}	payloads.ErrorResponseBody	"Internal server error"
+//	@Router			/api/content/text/{id} [delete]
 func (s *TextService) DeleteUserText(response http.ResponseWriter, request *http.Request) {
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)

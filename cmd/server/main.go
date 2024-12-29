@@ -7,6 +7,12 @@ import (
 	"passkeeper/internal/serverapp"
 )
 
+// @title API Passkeeper
+// @version 1.0
+// @description API для работы с хранилищем паролей и данных
+
+// @host localhost:8080
+// @BasePath /
 func main() {
 	log.Println("Start program")
 	// Устанавливаем настройки

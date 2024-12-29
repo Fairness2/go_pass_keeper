@@ -1,0 +1,1134 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API для работы с хранилищем паролей и данных",
+        "title": "API Passkeeper",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/content/card": {
+            "get": {
+                "description": "Получает список карт и связанных с ними комментариев для аутентифицированного пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "card"
+                ],
+                "summary": "Получить карты пользователей с комментариями",
+                "responses": {
+                    "200": {
+                        "description": "Array of user cards with comments",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/payloads.CardWithComment"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "User not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Обновляет существующую карту вместе с комментарием для аутентифицированного пользователя. Гарантирует существование карты и обрабатывает проверку.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "card"
+                ],
+                "summary": "Обновить карту пользователя с комментарием",
+                "parameters": [
+                    {
+                        "description": "Updated card data and comment",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payloads.SaveCard"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid input or bad request",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Card not found",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создает новую запись о карту вместе с необязательным комментарием для аутентифицированного пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "card"
+                ],
+                "summary": "Сохранить карту пользователя с комментарием",
+                "parameters": [
+                    {
+                        "description": "Card data and comment",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payloads.SaveCard"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid input or bad request",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/content/card/{id}": {
+            "delete": {
+                "description": "Удаляет карту пользователя по его идентификатору. Гарантирует, что пользователь аутентифицирован и идентификатор карты корректен.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "card"
+                ],
+                "summary": "Удалить карту пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Card ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid card ID",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/content/file": {
+            "get": {
+                "description": "Получает список файлов и связанных с ними комментариев для аутентифицированного пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "file"
+                ],
+                "summary": "Получить файлы пользователей с комментариями",
+                "responses": {
+                    "200": {
+                        "description": "Array of user files with comments",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/payloads.FileWithComment"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "User not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Обновляет существующий файл вместе с комментарием для аутентифицированного пользователя. Гарантирует существование файла и обрабатывает проверку.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "files"
+                ],
+                "summary": "Обновить файл пользователя с комментарием",
+                "parameters": [
+                    {
+                        "description": "Updated file data and comment",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payloads.UpdateFile"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid input or bad request",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "File not found",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/content/file/download/{id}": {
+            "get": {
+                "description": "Позволяет аутентифицированному пользователю загружать файл по его идентификатору.",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "file"
+                ],
+                "summary": "Загрузите файл пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "File ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid file ID",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "File not found",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/content/file/{id}": {
+            "delete": {
+                "description": "Удаляет файл пользователя по его идентификатору. Гарантирует, что пользователь аутентифицирован и идентификатор файла корректен.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "file"
+                ],
+                "summary": "Удалить файл пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "File ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid file ID",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/content/files": {
+            "post": {
+                "description": "Сохраняет новый файл для аутентифицированного пользователя. Запрос должен включать составной файл, имя и необязательный комментарий.",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "file"
+                ],
+                "summary": "Сохраните новый файл с необязательным комментарием.",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File to upload",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Name of the file",
+                        "name": "name",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional comment for the file",
+                        "name": "comment",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid input or bad request",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/content/password": {
+            "get": {
+                "description": "Получает список паролей и связанных с ними комментариев для аутентифицированного пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "password"
+                ],
+                "summary": "Получить пароли пользователей с комментариями",
+                "responses": {
+                    "200": {
+                        "description": "Array of user passwords with comments",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/payloads.PasswordWithComment"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "User not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Обновляет существующий пароль вместе с комментарием для аутентифицированного пользователя. Гарантирует существование пароля и обрабатывает проверку.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "password"
+                ],
+                "summary": "Обновить пароль пользователя с комментарием",
+                "parameters": [
+                    {
+                        "description": "Updated password data and comment",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payloads.SavePassword"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid input or bad request",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Password not found",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создает новую запись о пароле вместе с необязательным комментарием для аутентифицированного пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "text"
+                ],
+                "summary": "Сохранить пользовательский пароль с комментарием",
+                "parameters": [
+                    {
+                        "description": "Password data and comment",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payloads.SavePassword"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid input or bad request",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/content/password/{id}": {
+            "delete": {
+                "description": "Удаляет пароль пользователя по его идентификатору. Гарантирует, что пользователь аутентифицирован и идентификатор пароля корректен.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "password"
+                ],
+                "summary": "Удалить пароль пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Password ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid password ID",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/content/text": {
+            "get": {
+                "description": "Получает список текстов и связанных с ними комментариев для аутентифицированного пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "text"
+                ],
+                "summary": "Получить тексты пользователей с комментариями",
+                "responses": {
+                    "200": {
+                        "description": "Array of user texts with comments",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/payloads.TextWithComment"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "User not authorized",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Обновляет существующий текст вместе с комментарием для аутентифицированного пользователя. Гарантирует существование текста и обрабатывает проверку.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "text"
+                ],
+                "summary": "Обновить текст пользователя с комментарием",
+                "parameters": [
+                    {
+                        "description": "Updated text data and comment",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payloads.SaveText"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid input or bad request",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "404": {
+                        "description": "Text not found",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Создает новую текстовую запись вместе с необязательным комментарием для аутентифицированного пользователя.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "text"
+                ],
+                "summary": "Сохранить пользовательский текст с комментарием",
+                "parameters": [
+                    {
+                        "description": "Text data and comment",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payloads.SaveText"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid input or bad request",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/content/text/{id}": {
+            "delete": {
+                "description": "Удаляет текст пользователя по его идентификатору. Гарантирует, что пользователь аутентифицирован и идентификатор текста корректен.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "text"
+                ],
+                "summary": "Удалить текст пользователя",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Text ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Invalid text ID",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/login": {
+            "post": {
+                "description": "обрабатывает вход пользователя в систему, проверяя учетные данные и генерируя токен авторизации.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Пользователь"
+                ],
+                "summary": "Вход пользователя в систему",
+                "parameters": [
+                    {
+                        "description": "Login Payload",
+                        "name": "login",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payloads.Register"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.Authorization"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/register": {
+            "post": {
+                "description": "обрабатывает регистрацию новых пользователей, включая проверку, создание и генерацию токенов.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Пользователь"
+                ],
+                "summary": "Регистрация нового пользователя",
+                "parameters": [
+                    {
+                        "description": "Register Payload",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payloads.Register"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.Authorization"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/payloads.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "payloads.Authorization": {
+            "type": "object",
+            "properties": {
+                "refresh": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "payloads.CardWithComment": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "cvv": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "date": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "number": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "owner": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "payloads.ErrorResponseBody": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Успешный или не успешный результат",
+                    "type": "integer"
+                }
+            }
+        },
+        "payloads.FileWithComment": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "payloads.PasswordWithComment": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "domen": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "password": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "username": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "payloads.Register": {
+            "type": "object",
+            "properties": {
+                "login": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "payloads.SaveCard": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "cvv": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "date": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "number": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "owner": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "payloads.SavePassword": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "domen": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "password": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "username": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "payloads.SaveText": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "text_data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "payloads.TextWithComment": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "text_data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "payloads.UpdateFile": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        }
+    }
+}
