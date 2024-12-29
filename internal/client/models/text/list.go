@@ -17,10 +17,20 @@ var (
 	selectedHeaderText = style.HeaderStyle.Render("Текст")
 )
 
+// processService определяет интерфейс для управления текстовыми объектами, включая поиск, шифрование, дешифрование, создание, обновление и удаление.
+type processService interface {
+	Get() ([]service.TextData, error)
+	EncryptItem(body *payloads.TextWithComment) (*payloads.TextWithComment, error)
+	DecryptItems(items []*payloads.TextWithComment) ([]service.TextData, error)
+	Create(body *payloads.TextWithComment) error
+	Update(body *payloads.TextWithComment) error
+	Delete(id int64) error
+}
+
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка паролей.
 type List struct {
 	list       list.Model
-	pService   *service.CRUDService[*payloads.TextWithComment, service.TextData]
+	pService   processService
 	modelError error
 	selected   *service.TextData
 	help       help.Model
@@ -29,7 +39,7 @@ type List struct {
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.TextService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(textService *service.CRUDService[*payloads.TextWithComment, service.TextData]) List {
+func NewList(textService processService) List {
 	m := List{
 		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
 		pService: textService,

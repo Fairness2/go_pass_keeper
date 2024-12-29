@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/encrypt/cipher"
 	"passkeeper/internal/payloads"
@@ -45,7 +44,7 @@ type FileService struct {
 }
 
 // NewFileService создает и инициализирует новый экземпляр FileService с предоставленными конфигурациями клиента и пользователя.
-func NewFileService(client *serverclient.Client, user *user.User) *FileService {
+func NewFileService(client crudClient, user *user.User) *FileService {
 	return &FileService{
 		CRUDService[*payloads.FileWithComment, FileData]{
 			client: client,
@@ -113,8 +112,8 @@ func (s *FileService) DecryptFile(from io.Reader, dest io.Writer) error {
 // В качестве входных данных требуется объект FileWithComment и путь к файлу.
 // Возвращает ошибку, если запрос не выполнен или статус ответа недействителен.
 func (s *FileService) CreateFile(body *payloads.FileWithComment, filePath string) error {
-	request := s.client.Client.R()
-	response, err := request.SetAuthToken(s.client.Token).
+	request := s.client.GetRequest()
+	response, err := request.SetAuthToken(s.client.GetToken()).
 		SetFile("file", filePath).
 		SetMultipartFormData(map[string]string{
 			"name":    string(body.Name),
@@ -132,8 +131,8 @@ func (s *FileService) CreateFile(body *payloads.FileWithComment, filePath string
 
 // DownloadFile загружает файл с указанным идентификатором с сервера и сохраняет его по указанному пути назначения.
 func (s *FileService) DownloadFile(id int64, destFile string) error {
-	req := s.client.Client.R().
-		SetAuthToken(s.client.Token).
+	req := s.client.GetRequest().
+		SetAuthToken(s.client.GetToken()).
 		SetOutput(destFile)
 	resp, err := req.Get(fmt.Sprintf("%s/download/%d", s.url, id))
 	if err != nil {

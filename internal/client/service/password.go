@@ -1,7 +1,6 @@
 package service
 
 import (
-	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/payloads"
 )
@@ -21,7 +20,7 @@ func (i PassData) Description() string { return i.Comment }
 func (i PassData) FilterValue() string { return i.Domen }
 
 // NewCRUDPasswordService создает и возвращает новый CRUDService для управления PasswordWithComment с поддержкой расшифровки.
-func NewCRUDPasswordService(client *serverclient.Client, user *user.User) *CRUDService[*payloads.PasswordWithComment, PassData] {
+func NewCRUDPasswordService(client crudClient, user *user.User) *CRUDService[*payloads.PasswordWithComment, PassData] {
 	return &CRUDService[*payloads.PasswordWithComment, PassData]{
 		client: client,
 		user:   user,

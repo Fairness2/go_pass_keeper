@@ -8,7 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"passkeeper/internal/client/components"
 	"passkeeper/internal/client/models"
-	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
 	"passkeeper/internal/payloads"
 	"strings"
@@ -24,7 +23,7 @@ var (
 // Form представляет собой структуру для управления формами пользовательского ввода, включая управление фокусом и проверку ввода.
 type Form struct {
 	focusIndex int
-	pService   *service.CRUDService[*payloads.TextWithComment, service.TextData]
+	pService   processService
 	data       *payloads.TextWithComment
 	modelError error
 	inputs     []components.BlinkInput
@@ -33,7 +32,7 @@ type Form struct {
 }
 
 // InitialForm инициализирует и возвращает форму с предопределенными полями ввода и привязками помощи по навигации с помощью клавиатуры.
-func InitialForm(service *service.CRUDService[*payloads.TextWithComment, service.TextData], data *payloads.TextWithComment) Form {
+func InitialForm(service processService, data *payloads.TextWithComment) Form {
 	text := components.NewTArea("Text", string(data.TextData), true)
 	comment := components.NewTArea("Comment", data.Comment, false)
 

@@ -10,7 +10,6 @@ import (
 	"passkeeper/internal/client/config"
 	"passkeeper/internal/client/models"
 	"passkeeper/internal/client/models/menu"
-	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
 	"strings"
 )
@@ -25,11 +24,16 @@ var (
 	blurredRegisterButton = style.ButtonBlurredStyle.Render(buttonRegister)
 )
 
+// processService определяет интерфейс для обработки аутентификации пользователя с поддержкой процесса входа в систему и регистрации.
+type processService interface {
+	Login(username, password string, isRegistration bool) error
+}
+
 // Model представляет собой основную структуру для управления состоянием пользовательского интерфейса входа в систему и его взаимодействия с LoginService.
 type Model struct {
 	focusIndex int
 	inputs     []*components.TInput
-	service    *service.LoginService
+	service    processService
 	modelError error
 	help       help.Model
 	helpKeys   []key.Binding
@@ -37,7 +41,7 @@ type Model struct {
 }
 
 // InitialModel инициализирует новую модель с предопределенными полями ввода имени и пароля и назначает LoginService.
-func InitialModel(service *service.LoginService) Model {
+func InitialModel(service processService) Model {
 	m := Model{
 		inputs: []*components.TInput{
 			components.NewTInput("Логин", "", true),

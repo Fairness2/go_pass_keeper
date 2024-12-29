@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/go-resty/resty/v2"
-	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/payloads"
 )
@@ -18,13 +17,19 @@ var (
 	ErrInvalidResponseBody   = errors.New("invalid response body")
 )
 
+// loginService определяет методы обработки запросов аутентификации и управления токенами аутентификации.
+type loginService interface {
+	GetRequest() *resty.Request
+	SetTokens(token, refreshToken string)
+}
+
 // LoginService предоставляет методы аутентификации пользователей с использованием клиента для связи с сервером.
 type LoginService struct {
-	client *serverclient.Client
+	client loginService
 }
 
 // NewLoginService инициализирует новый экземпляр LoginService, используя предоставленный серверный клиент для аутентификации пользователя.
-func NewLoginService(client *serverclient.Client) *LoginService {
+func NewLoginService(client loginService) *LoginService {
 	return &LoginService{client: client}
 }
 
@@ -44,7 +49,7 @@ func (s *LoginService) Login(username, password string, isRegistration bool) err
 	if err != nil {
 		return errors.Join(ErrInvalidRequestBody, err)
 	}
-	request := s.client.Client.R()
+	request := s.client.GetRequest()
 	request.SetBody(marshaledBody)
 	var response *resty.Response
 	if !isRegistration {

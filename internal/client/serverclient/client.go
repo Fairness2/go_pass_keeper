@@ -13,9 +13,9 @@ var Inst *Client
 
 // Client представляет клиент Resty со связанными токенами аутентификации для взаимодействия с API.
 type Client struct {
-	Client       *resty.Client
-	Token        string
-	RefreshToken string
+	client       *resty.Client
+	token        string
+	refreshToken string
 }
 
 // NewClient инициализирует новый RestClient с предоставленным базовым URL-адресом.
@@ -25,11 +25,21 @@ func NewClient(baseURL string) (*Client, error) {
 	}
 	c := resty.New()
 	c.BaseURL = baseURL
-	return &Client{Client: c}, nil
+	return &Client{client: c}, nil
 }
 
 // SetTokens устанавливает токен доступа и токен обновления для экземпляра клиента.
 func (c *Client) SetTokens(token, refreshToken string) {
-	c.Token = token
-	c.RefreshToken = refreshToken
+	c.token = token
+	c.refreshToken = refreshToken
+}
+
+// GetToken возвращает текущий токен аутентификации, хранящийся в Клиенте.
+func (c *Client) GetToken() string {
+	return c.token
+}
+
+// GetRequest создает и возвращает новый объект resty.Request для создания и отправки HTTP-запросов.
+func (c *Client) GetRequest() *resty.Request {
+	return c.client.R()
 }

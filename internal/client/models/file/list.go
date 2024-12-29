@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"io"
 	"os"
 	"passkeeper/internal/client/components"
 	"passkeeper/internal/client/models"
@@ -21,10 +22,25 @@ var (
 	filePathHeaderText = style.HeaderStyle.Render("путь для загрузки")
 )
 
+// processService определяет интерфейс для управления файлами, включая шифрование, дешифрование, создание, обновление и удаление.
+// Он предоставляет методы для управления данными файла с соответствующими комментариями и поддерживает шифрование и дешифрование на уровне файла.
+type processService interface {
+	Get() ([]service.FileData, error)
+	EncryptItem(body *payloads.FileWithComment) (*payloads.FileWithComment, error)
+	DecryptItems(items []*payloads.FileWithComment) ([]service.FileData, error)
+	Create(body *payloads.FileWithComment) error
+	Update(body *payloads.FileWithComment) error
+	Delete(id int64) error
+	EncryptFile(filePath string) (string, error)
+	DecryptFile(from io.Reader, dest io.Writer) error
+	CreateFile(body *payloads.FileWithComment, filePath string) error
+	DownloadFile(id int64, destFile string) error
+}
+
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка файлов.
 type List struct {
 	list         list.Model
-	pService     *service.FileService
+	pService     processService
 	modelError   error
 	selected     *service.FileData
 	help         help.Model
@@ -36,9 +52,9 @@ type List struct {
 	focusIndex   int
 }
 
-// NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.CardService.
+// NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.FileService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(fileService *service.FileService) List {
+func NewList(fileService processService) List {
 	initialDownloadPath := os.Getenv("HOME") + "/Downloads"
 	m := List{
 		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),

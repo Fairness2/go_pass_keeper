@@ -17,10 +17,20 @@ var (
 	selectedHeaderText = style.HeaderStyle.Render("Пароль")
 )
 
+// processService определяет интерфейс для управления данными пароля, включая операции извлечения, шифрования, расшифровки, создания, обновления и удаления.
+type processService interface {
+	Get() ([]service.PassData, error)
+	EncryptItem(body *payloads.PasswordWithComment) (*payloads.PasswordWithComment, error)
+	DecryptItems(items []*payloads.PasswordWithComment) ([]service.PassData, error)
+	Create(body *payloads.PasswordWithComment) error
+	Update(body *payloads.PasswordWithComment) error
+	Delete(id int64) error
+}
+
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка паролей.
 type List struct {
 	list       list.Model
-	pService   *service.CRUDService[*payloads.PasswordWithComment, service.PassData]
+	pService   processService
 	modelError error
 	selected   *service.PassData
 	help       help.Model
@@ -29,7 +39,7 @@ type List struct {
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.PasswordService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(passwordService *service.CRUDService[*payloads.PasswordWithComment, service.PassData]) List {
+func NewList(passwordService processService) List {
 	m := List{
 		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
 		pService: passwordService,

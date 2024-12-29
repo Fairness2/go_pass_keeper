@@ -19,10 +19,20 @@ var (
 	selectedHeaderText = style.HeaderStyle.Render("Карта")
 )
 
+// processService определяет интерфейс для обработки операций с данными карты, включая операции шифрования, дешифрования и CRUD.
+type processService interface {
+	Get() ([]service.CardData, error)
+	EncryptItem(body *payloads.CardWithComment) (*payloads.CardWithComment, error)
+	DecryptItems(items []*payloads.CardWithComment) ([]service.CardData, error)
+	Create(body *payloads.CardWithComment) error
+	Update(body *payloads.CardWithComment) error
+	Delete(id int64) error
+}
+
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка карт.
 type List struct {
 	list       list.Model
-	pService   *service.CRUDService[*payloads.CardWithComment, service.CardData]
+	pService   processService
 	modelError error
 	selected   *service.CardData
 	help       help.Model
@@ -31,7 +41,7 @@ type List struct {
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.CardService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(cardService *service.CRUDService[*payloads.CardWithComment, service.CardData]) List {
+func NewList(cardService processService) List {
 	m := List{
 		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
 		pService: cardService,

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/charmbracelet/bubbles/list"
-	"passkeeper/internal/client/serverclient"
+	"github.com/go-resty/resty/v2"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/encrypt/cipher"
 	"passkeeper/internal/payloads"
@@ -18,10 +18,18 @@ type Encryptable interface {
 	Decrypt(payloads.Decrypter) error
 }
 
+// crudClient определяет интерфейс для взаимодействия с операциями CRUD на стороне сервера.
+// GetRequest извлекает новый объект запроса, настроенный для клиента.
+// GetToken возвращает токен аутентификации, связанный с клиентом.
+type crudClient interface {
+	GetRequest() *resty.Request
+	GetToken() string
+}
+
 // CRUDService предоставляет базовые операции CRUD для зашифрованных данных с использованием клиента сервера и учетных данных пользователя.
 // T — тип Encryptable, реализующий методы шифрования/дешифрования, а Y — преобразованный тип результата.
 type CRUDService[T Encryptable, Y list.Item] struct {
-	client *serverclient.Client
+	client crudClient
 	user   *user.User
 	url    string
 	crtY   func(T) Y
@@ -29,8 +37,8 @@ type CRUDService[T Encryptable, Y list.Item] struct {
 
 // Get получает с сервера список расшифрованных элементов типа Y и возвращает их, либо ошибку в случае неудачи.
 func (s *CRUDService[T, Y]) Get() ([]Y, error) {
-	request := s.client.Client.R()
-	request.SetAuthToken(s.client.Token)
+	request := s.client.GetRequest()
+	request.SetAuthToken(s.client.GetToken())
 	response, err := request.Get(s.url)
 	if err != nil {
 		return nil, errors.Join(ErrSendingRequest, err)
@@ -76,8 +84,8 @@ func (s *CRUDService[T, Y]) DecryptItems(items []T) ([]Y, error) {
 
 // Create отправляет POST-запрос на создание нового ресурса типа T и возвращает ошибку, если запрос не выполнен.
 func (s *CRUDService[T, Y]) Create(body T) error {
-	request := s.client.Client.R()
-	request.SetAuthToken(s.client.Token)
+	request := s.client.GetRequest()
+	request.SetAuthToken(s.client.GetToken())
 	request.SetBody(body)
 	response, err := request.Post(s.url)
 	if err != nil {
@@ -91,8 +99,8 @@ func (s *CRUDService[T, Y]) Create(body T) error {
 
 // Update отправляет запрос PUT с предоставленным телом типа T для обновления существующего ресурса и возвращает ошибку в случае сбоя.
 func (s *CRUDService[T, Y]) Update(body T) error {
-	request := s.client.Client.R()
-	request.SetAuthToken(s.client.Token)
+	request := s.client.GetRequest()
+	request.SetAuthToken(s.client.GetToken())
 	request.SetBody(body)
 	response, err := request.Put(s.url)
 	if err != nil {
@@ -106,8 +114,8 @@ func (s *CRUDService[T, Y]) Update(body T) error {
 
 // Delete отправляет запрос DELETE на удаление ресурса по его идентификатору и возвращает ошибку, если операция не удалась.
 func (s *CRUDService[T, Y]) Delete(id int64) error {
-	request := s.client.Client.R()
-	request.SetAuthToken(s.client.Token)
+	request := s.client.GetRequest()
+	request.SetAuthToken(s.client.GetToken())
 	response, err := request.Delete(fmt.Sprintf("%s/%d", s.url, id))
 	if err != nil {
 		return errors.Join(ErrSendingRequest, err)

@@ -1,7 +1,6 @@
 package service
 
 import (
-	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/payloads"
 )
@@ -27,7 +26,7 @@ func (i CardData) FilterValue() string { return string(i.Number) }
 
 // NewCRUDCardService инициализирует CRUDService для управления данными карты с параметрами аутентификации сервера-клиента и пользователя.
 // Возвращает CRUDService, настроенный для обработки полезных данных CardWithComment и преобразованный в CardData.
-func NewCRUDCardService(client *serverclient.Client, user *user.User) *CRUDService[*payloads.CardWithComment, CardData] {
+func NewCRUDCardService(client crudClient, user *user.User) *CRUDService[*payloads.CardWithComment, CardData] {
 	return &CRUDService[*payloads.CardWithComment, CardData]{
 		client: client,
 		user:   user,

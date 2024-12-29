@@ -1,7 +1,6 @@
 package service
 
 import (
-	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/payloads"
 )
@@ -33,7 +32,7 @@ func (i TextData) FilterValue() string { return string(i.TextData) }
 // NewCRUDTextService создает новую службу CRUD для управления объектами TextWithComment.
 // Он использует предоставленный серверный клиент и пользователя для запросов API.
 // Служба включает в себя логику обработки и дешифрования текста для сущностей.
-func NewCRUDTextService(client *serverclient.Client, user *user.User) *CRUDService[*payloads.TextWithComment, TextData] {
+func NewCRUDTextService(client crudClient, user *user.User) *CRUDService[*payloads.TextWithComment, TextData] {
 	return &CRUDService[*payloads.TextWithComment, TextData]{
 		client: client,
 		user:   user,
