@@ -1,5 +1,9 @@
 package config
 
+import (
+	"crypto/sha512"
+)
+
 const (
 	// DefaultServerURL Url сервера получателя метрик по умолчанию
 	DefaultServerURL = "http://localhost:8080"
@@ -14,4 +18,9 @@ var (
 	BuildOS       string = "N/A"            // Представляет операционную систему, на которой было создано приложение. По умолчанию используется значение «N/A», если оно не установлено во время сборки.
 	ServerAddress string = DefaultServerURL // адрес сервера
 	LogLevel      string = DefaultLogLevel  // Уровень логирования
+
+	PassKeyIterations = 100000               // Кол-во итераций при генерации ключа
+	PassKeyLength     = 32                   // Длина ключа
+	PassKeySalt       = []byte("passkeeper") // Соль для ключа
+	PassKeyAlgorithm  = sha512.New           // Алгоритм для ключа
 )

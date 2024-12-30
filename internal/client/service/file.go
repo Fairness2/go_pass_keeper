@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"passkeeper/internal/client/user"
-	"passkeeper/internal/encrypt/cipher"
 	"passkeeper/internal/payloads"
 )
 
@@ -78,7 +77,7 @@ func (s *FileService) EncryptFile(filePath string) (string, error) {
 	}
 	defer encryptedFile.Close()
 
-	ch := cipher.NewCipher([]byte(s.user.Password))
+	ch := s.user.Cipher
 	encryptedBody, err := ch.Encrypt(originalBody)
 	if err != nil {
 		return "", errors.Join(ErrEncryptingFile, err)
@@ -97,7 +96,7 @@ func (s *FileService) DecryptFile(from io.Reader, dest io.Writer) error {
 	if err != nil {
 		return errors.Join(ErrReadingFile, err)
 	}
-	ch := cipher.NewCipher([]byte(s.user.Password))
+	ch := s.user.Cipher
 	decryptedBody, err := ch.Decrypt(enBody)
 	if err != nil {
 		return errors.Join(ErrDecryptFile, err)

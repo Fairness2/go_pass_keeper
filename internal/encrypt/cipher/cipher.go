@@ -1,14 +1,21 @@
 package cipher
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
 	"fmt"
+	"golang.org/x/crypto/pbkdf2"
 	"io"
-	"math"
 )
+
+type Config struct {
+	Key        []byte
+	Salt       []byte
+	Iterations int
+	Length     int
+}
 
 // Cipher — это структура, в которой хранится криптографический ключ для операций шифрования и дешифрования.
 type Cipher struct {
@@ -16,9 +23,9 @@ type Cipher struct {
 }
 
 // NewCipher инициализирует новый экземпляр Cipher с помощью криптографического ключа, полученного из предоставленного ключа.
-func NewCipher(key []byte) *Cipher {
+func NewCipher(cnf Config) *Cipher {
 	return &Cipher{
-		key: padKey(key),
+		key: padKey(cnf.Key, cnf.Salt, cnf.Iterations, cnf.Length),
 	}
 }
 
@@ -60,16 +67,7 @@ func (c *Cipher) Decrypt(body []byte) ([]byte, error) {
 }
 
 // padKey настраивает предоставленный ключ до фиксированной длины в 32 байта, усекая или дополняя его повторяющимися байтами.
-func padKey(key []byte) []byte { // TODO Как то заполнить дополнительно
-	newKey := make([]byte, 32)
-	if len(key) > 32 {
-		copy(newKey, key)
-	} else if len(key) < 32 {
-		times := math.Ceil(float64(32) / float64(len(key)))
-		copy(newKey, bytes.Repeat(key, int(times)))
-	} else {
-		copy(newKey, key)
-	}
-
-	return newKey
+func padKey(pass, salt []byte, iterations, length int) []byte { // TODO Как то заполнить дополнительно
+	// Нам нужно при каждом хэшировании получать одинаковый  результат, чтобы не менялся ключ для шифрования разного контента
+	return pbkdf2.Key(pass, salt, iterations, length, sha256.New)
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/go-resty/resty/v2"
 	"passkeeper/internal/client/user"
-	"passkeeper/internal/encrypt/cipher"
 	"passkeeper/internal/payloads"
 )
 
@@ -60,7 +59,7 @@ func (s *CRUDService[T, Y]) Get() ([]Y, error) {
 
 // EncryptItem шифрует данный элемент типа T, используя пароль пользователя в качестве ключа шифрования, и возвращает зашифрованный элемент.
 func (s *CRUDService[T, Y]) EncryptItem(body T) (T, error) {
-	ch := cipher.NewCipher([]byte(s.user.Password))
+	ch := s.user.Cipher
 	if err := body.Encrypt(ch); err != nil {
 		return body, err
 	}
@@ -70,7 +69,7 @@ func (s *CRUDService[T, Y]) EncryptItem(body T) (T, error) {
 // DecryptItems расшифровывает фрагмент элементов типа T в фрагмент типа Y, используя пароль пользователя в качестве ключа дешифрования.
 // Возвращает расшифрованный фрагмент или ошибку, если расшифровка не удалась на каком-либо этапе.
 func (s *CRUDService[T, Y]) DecryptItems(items []T) ([]Y, error) {
-	ch := cipher.NewCipher([]byte(s.user.Password))
+	ch := s.user.Cipher
 	dItems := make([]Y, len(items))
 	for i, item := range items {
 		if err := item.Decrypt(ch); err != nil {

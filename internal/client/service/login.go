@@ -69,8 +69,6 @@ func (s *LoginService) Login(username, password string, isRegistration bool) err
 		return errors.Join(ErrInvalidResponseBody, err)
 	}
 	s.client.SetTokens(tokens.Token, tokens.Refresh)
-	user.CurrentUser = &user.User{
-		Password: password,
-	}
+	user.SetUser(0, password)
 	return nil
 }

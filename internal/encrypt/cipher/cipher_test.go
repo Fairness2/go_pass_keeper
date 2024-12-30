@@ -1,42 +1,40 @@
 package cipher
 
 import (
-	"bytes"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestPadKey(t *testing.T) {
 	tests := []struct {
-		name     string
-		key      []byte
-		expected []byte
+		name       string
+		key        []byte
+		salt       []byte
+		iterations int
+		length     int
+		expected   []byte
 	}{
 		{
-			name:     "key_length_less_than_32_bytes",
-			key:      []byte("short_key"),
-			expected: append(bytes.Repeat([]byte("short_key"), 4)[:32]),
+			name:       "key_length_less_than_32_bytes",
+			key:        []byte("short_key"),
+			salt:       []byte("salt"),
+			iterations: 100000,
+			length:     32,
+			expected:   []byte{0x81, 0x77, 0xbe, 0xeb, 0x88, 0x8, 0xf2, 0x9d, 0x73, 0x3, 0xc8, 0x22, 0xdd, 0xac, 0xc6, 0xf3, 0xc8, 0xcd, 0x88, 0x8d, 0x22, 0x86, 0x0, 0x6e, 0x0, 0x94, 0xab, 0xd3, 0x36, 0x9, 0xe6, 0x49},
 		},
 		{
-			name:     "key_length_exactly_32_bytes",
-			key:      []byte("this_is_a_32_byte_key_0123456789"),
-			expected: []byte("this_is_a_32_byte_key_0123456789"),
-		},
-		{
-			name:     "key_length_greater_than_32_bytes",
-			key:      []byte("this_is_a_key_that_is_longer_than_32_bytes"),
-			expected: []byte("this_is_a_key_that_is_longer_tha"),
-		},
-		{
-			name:     "key_of_1_byte",
-			key:      []byte("A"),
-			expected: append(bytes.Repeat([]byte("A"), 32)),
+			name:       "empty_key",
+			key:        []byte{},
+			salt:       []byte("salt"),
+			iterations: 100000,
+			length:     32,
+			expected:   []byte{0x37, 0x8a, 0x8b, 0xda, 0x97, 0x6a, 0xde, 0xa, 0x44, 0x97, 0xd2, 0xa0, 0x4b, 0xd1, 0xce, 0x35, 0x2b, 0xc6, 0x6c, 0x38, 0x99, 0x47, 0x62, 0x4a, 0xe5, 0xfa, 0xb8, 0xc6, 0x20, 0x74, 0xa3, 0x71},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := padKey(tc.key)
+			got := padKey(tc.key, tc.salt, tc.iterations, tc.length)
 			assert.Equal(t, tc.expected, got)
 		})
 	}
@@ -46,38 +44,37 @@ func TestNewCipher(t *testing.T) {
 	tests := []struct {
 		name        string
 		key         []byte
+		salt        []byte
+		iterations  int
+		length      int
 		expectedKey []byte
 	}{
 		{
 			name:        "valid_short_key",
-			key:         []byte("shortkey"),
-			expectedKey: append(bytes.Repeat([]byte("shortkey"), 4)[:32]),
-		},
-		{
-			name:        "valid_32_byte_key",
-			key:         []byte("this_is_a_32_byte_key_0123456789"),
-			expectedKey: []byte("this_is_a_32_byte_key_0123456789"),
-		},
-		{
-			name:        "key_longer_than_32_bytes",
-			key:         []byte("this_is_a_key_that_is_longer_than_32_bytes_12345"),
-			expectedKey: []byte("this_is_a_key_that_is_longer_tha"),
+			key:         []byte("short_key"),
+			salt:        []byte("salt"),
+			iterations:  100000,
+			length:      32,
+			expectedKey: []byte{0x81, 0x77, 0xbe, 0xeb, 0x88, 0x8, 0xf2, 0x9d, 0x73, 0x3, 0xc8, 0x22, 0xdd, 0xac, 0xc6, 0xf3, 0xc8, 0xcd, 0x88, 0x8d, 0x22, 0x86, 0x0, 0x6e, 0x0, 0x94, 0xab, 0xd3, 0x36, 0x9, 0xe6, 0x49},
 		},
 		{
 			name:        "empty_key_input",
 			key:         []byte(""),
-			expectedKey: bytes.Repeat([]byte{'\x00'}, 32),
-		},
-		{
-			name:        "single_byte_key",
-			key:         []byte("A"),
-			expectedKey: bytes.Repeat([]byte("A"), 32),
+			salt:        []byte("salt"),
+			iterations:  100000,
+			length:      32,
+			expectedKey: []byte{0x37, 0x8a, 0x8b, 0xda, 0x97, 0x6a, 0xde, 0xa, 0x44, 0x97, 0xd2, 0xa0, 0x4b, 0xd1, 0xce, 0x35, 0x2b, 0xc6, 0x6c, 0x38, 0x99, 0x47, 0x62, 0x4a, 0xe5, 0xfa, 0xb8, 0xc6, 0x20, 0x74, 0xa3, 0x71},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cipher := NewCipher(tc.key)
+			cipher := NewCipher(Config{
+				Key:        tc.key,
+				Salt:       tc.salt,
+				Iterations: tc.iterations,
+				Length:     tc.length,
+			})
 			assert.Equal(t, tc.expectedKey, cipher.key)
 		})
 	}
