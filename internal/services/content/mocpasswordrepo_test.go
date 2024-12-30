@@ -50,7 +50,7 @@ func (mr *MockpasswordRepositoryMockRecorder) Create(ctx, content, comment inter
 }
 
 // DeleteByUserIDAndID mocks base method.
-func (m *MockpasswordRepository) DeleteByUserIDAndID(ctx context.Context, userID, id int64) error {
+func (m *MockpasswordRepository) DeleteByUserIDAndID(ctx context.Context, userID int64, id string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteByUserIDAndID", ctx, userID, id)
 	ret0, _ := ret[0].(error)
@@ -79,7 +79,7 @@ func (mr *MockpasswordRepositoryMockRecorder) GetByUserID(ctx, userID interface{
 }
 
 // GetByUserIDAndId mocks base method.
-func (m *MockpasswordRepository) GetByUserIDAndId(ctx context.Context, userID, id int64) (*models.PasswordContent, error) {
+func (m *MockpasswordRepository) GetByUserIDAndId(ctx context.Context, userID int64, id string) (*models.PasswordContent, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByUserIDAndId", ctx, userID, id)
 	ret0, _ := ret[0].(*models.PasswordContent)

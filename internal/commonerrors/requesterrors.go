@@ -7,6 +7,9 @@ type RequestError struct {
 }
 
 func (e *RequestError) Error() string {
+	if e.InternalError == nil {
+		return "RequestError"
+	}
 	return e.InternalError.Error()
 }
 

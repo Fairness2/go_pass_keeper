@@ -29,7 +29,7 @@ func TestCardService_DeleteUserCards(t *testing.T) {
 	}{
 		{
 			name:   "successful_delete",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *CardService {
 				repo := NewMockcardRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
@@ -48,7 +48,7 @@ func TestCardService_DeleteUserCards(t *testing.T) {
 		},
 		{
 			name:   "not_authorized",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *CardService {
 				repo := NewMockcardRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(0)
@@ -85,7 +85,7 @@ func TestCardService_DeleteUserCards(t *testing.T) {
 		},
 		{
 			name:   "delete_error",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *CardService {
 				repo := NewMockcardRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("some error")).Times(1)
@@ -138,13 +138,13 @@ func TestCardService_GetUserCards(t *testing.T) {
 	}{
 		{
 			name:     "successful_get",
-			response: "[{\"id\":1,\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"},{\"id\":2,\"number\":\"YWJvYmEy\",\"date\":\"YWJvYmEy\",\"owner\":\"YWJvYmEy\",\"cvv\":\"YWJvYmEy\",\"comment\":\"aboba2\"}]",
+			response: "[{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"},{\"id\":\"1726ef63-756e-4dda-b669-0dcbef37a67f\",\"number\":\"YWJvYmEy\",\"date\":\"YWJvYmEy\",\"owner\":\"YWJvYmEy\",\"cvv\":\"YWJvYmEy\",\"comment\":\"aboba2\"}]",
 			setMocks: func() *CardService {
 				repo := NewMockcardRepository(ctr)
 				repo.EXPECT().GetByUserID(gomock.Any(), gomock.Any()).Return([]models.CardWithComment{
 					{
 						CardContent: models.CardContent{
-							ID:        1,
+							ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 							UserID:    1,
 							Number:    []byte("aboba"),
 							Date:      []byte("aboba"),
@@ -157,7 +157,7 @@ func TestCardService_GetUserCards(t *testing.T) {
 					},
 					{
 						CardContent: models.CardContent{
-							ID:        2,
+							ID:        "1726ef63-756e-4dda-b669-0dcbef37a67f",
 							UserID:    1,
 							Number:    []byte("aboba2"),
 							Date:      []byte("aboba2"),
@@ -277,11 +277,11 @@ func TestCardService_UpdateCardHandler(t *testing.T) {
 	}{
 		{
 			name: "successful_update",
-			body: "{\"id\":1,\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *CardService {
 				repo := NewMockcardRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.CardContent{
-					ID:        1,
+					ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 					UserID:    1,
 					Number:    []byte("aboba"),
 					Date:      []byte("aboba"),
@@ -306,7 +306,7 @@ func TestCardService_UpdateCardHandler(t *testing.T) {
 		},
 		{
 			name: "not_authorized",
-			body: "{\"id\":1,\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *CardService {
 				repo := NewMockcardRepository(ctr)
 				handlers := &CardService{
@@ -359,7 +359,7 @@ func TestCardService_UpdateCardHandler(t *testing.T) {
 		},
 		{
 			name: "not_exists",
-			body: "{\"id\":1,\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *CardService {
 				repo := NewMockcardRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, repositories.ErrNotExist).Times(1)
@@ -379,7 +379,7 @@ func TestCardService_UpdateCardHandler(t *testing.T) {
 		},
 		{
 			name: "error_checking_exist",
-			body: "{\"id\":1,\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *CardService {
 				repo := NewMockcardRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("some_error")).Times(1)
@@ -399,11 +399,11 @@ func TestCardService_UpdateCardHandler(t *testing.T) {
 		},
 		{
 			name: "error_update",
-			body: "{\"id\":1,\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *CardService {
 				repo := NewMockcardRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.CardContent{
-					ID:        1,
+					ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 					UserID:    1,
 					Number:    []byte("aboba"),
 					Date:      []byte("aboba"),
@@ -516,24 +516,6 @@ func TestCardService_SaveTextHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "with_id",
-			body: "{\"id\":1,\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
-			setMocks: func() *CardService {
-				repo := NewMockcardRepository(ctr)
-				handlers := &CardService{
-					repository: repo,
-				}
-				return handlers
-			},
-			expectedStatus: http.StatusBadRequest,
-			authMiddleware: func(next http.Handler) http.Handler {
-				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					newR := r.WithContext(context.WithValue(r.Context(), token.UserKey, &models.User{ID: 1}))
-					next.ServeHTTP(w, newR)
-				})
-			},
-		},
-		{
 			name: "error_update",
 			body: "{\"number\":\"YWJvYmE=\",\"date\":\"YWJvYmE=\",\"owner\":\"YWJvYmE=\",\"cvv\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *CardService {
@@ -582,13 +564,13 @@ func TestNewCardService(t *testing.T) {
 	tests := []struct {
 		name          string
 		expectedError bool
-		getExec       func() repositories.SQLExecutor
+		getExec       func() cardRepository
 	}{
 		{
 			name:          "successful_initialization",
 			expectedError: false,
-			getExec: func() repositories.SQLExecutor {
-				return NewMockSQLExecutor(ctr)
+			getExec: func() cardRepository {
+				return NewMockcardRepository(ctr)
 			},
 		},
 	}
@@ -597,6 +579,53 @@ func TestNewCardService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			service := NewCardService(tt.getExec())
 			assert.NotNil(t, service, "NewCardService should not return nil")
+		})
+	}
+}
+
+func TestCardService_RegisterRoutes(t *testing.T) {
+	routes := []url{
+		{"/card", http.MethodPost},
+		{"/card", http.MethodPut},
+		{"/card", http.MethodGet},
+		{"/card/aboba", http.MethodDelete},
+	}
+	tests := []struct {
+		name           string
+		middleware     func(http.Handler) http.Handler
+		expectedRoutes []url
+	}{
+		{
+			name:           "routes_without_middleware",
+			middleware:     nil,
+			expectedRoutes: routes,
+		},
+		{
+			name: "routes_with_middleware",
+			middleware: func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("X-Test-Middleware", "Active")
+					next.ServeHTTP(w, r)
+				})
+			},
+			expectedRoutes: routes,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			handlers := &CardService{}
+			router := chi.NewRouter()
+			if tt.middleware != nil {
+				router.Group(handlers.RegisterRoutes(tt.middleware))
+			} else {
+				router.Group(handlers.RegisterRoutes())
+			}
+			for _, r := range tt.expectedRoutes {
+				res := router.Match(chi.NewRouteContext(), r.method, r.path)
+				assert.True(t, res)
+			}
 		})
 	}
 }

@@ -6,22 +6,21 @@ import (
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"net/http"
-	"passkeeper/internal/helpers"
 	"passkeeper/internal/logger"
 	"passkeeper/internal/models"
 	"passkeeper/internal/payloads"
 	"passkeeper/internal/repositories"
+	"passkeeper/internal/responsesetters"
 	"passkeeper/internal/token"
-	"strconv"
 	"time"
 )
 
 // cardRepository — интерфейс, определяющий операции по управлению данными карты и соответствующими комментариями в хранилище.
 type cardRepository interface {
 	Create(ctx context.Context, content models.CardContent, comment models.Comment) error
-	GetByUserIDAndId(ctx context.Context, userID int64, id int64) (*models.CardContent, error)
+	GetByUserIDAndId(ctx context.Context, userID int64, id string) (*models.CardContent, error)
 	GetByUserID(ctx context.Context, userID int64) ([]models.CardWithComment, error)
-	DeleteByUserIDAndID(ctx context.Context, userID int64, id int64) error
+	DeleteByUserIDAndID(ctx context.Context, userID int64, id string) error
 }
 
 // CardService предоставляет методы для управления картами пользователей и соответствующими комментариями в системе.
@@ -30,9 +29,9 @@ type CardService struct {
 }
 
 // NewCardService инициализирует и возвращает новый экземпляр CardService, настроенный с использованием предоставленной базой.
-func NewCardService(dbPool repositories.SQLExecutor) *CardService {
+func NewCardService(rep cardRepository) *CardService {
 	return &CardService{
-		repository: repositories.NewCardRepository(dbPool),
+		repository: rep,
 	}
 }
 
@@ -55,19 +54,14 @@ func (s *CardService) SaveCardHandler(response http.ResponseWriter, request *htt
 	var body payloads.SaveCard
 	err := getSaveBody(request, &body)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
-		return
-	}
-	// Для создания нельзя передавать идентификатор
-	if body.ID != 0 {
-		helpers.ProcessResponseWithStatus("ID should be empty", http.StatusBadRequest, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	card := models.CardContent{
@@ -82,7 +76,7 @@ func (s *CardService) SaveCardHandler(response http.ResponseWriter, request *htt
 		Comment:     body.Comment,
 	}
 	if err = s.repository.Create(request.Context(), card, comment); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
 
@@ -103,21 +97,21 @@ func (s *CardService) SaveCardHandler(response http.ResponseWriter, request *htt
 //	@Router			/api/content/card [put]
 func (s *CardService) UpdateCardHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	var body payloads.SaveCard
+	var body payloads.UpdateCard
 	err := getSaveBody(request, &body)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 	// Для создания нельзя передавать идентификатор
-	if body.ID <= 0 {
-		helpers.ProcessResponseWithStatus("ID should not be empty", http.StatusBadRequest, response)
+	if body.ID == "" {
+		responsesetters.ProcessResponseWithStatus("ID should not be empty", http.StatusBadRequest, response)
 		return
 	}
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	card := models.CardContent{
@@ -140,16 +134,16 @@ func (s *CardService) UpdateCardHandler(response http.ResponseWriter, request *h
 	_, err = s.repository.GetByUserIDAndId(ctx, card.UserID, card.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
-			helpers.ProcessResponseWithStatus("Card not found", http.StatusNotFound, response)
+			responsesetters.ProcessResponseWithStatus("Card not found", http.StatusNotFound, response)
 			return
 		} else {
-			helpers.SetInternalError(err, response)
+			responsesetters.SetInternalError(err, response)
 			return
 		}
 	}
 	// Обновляем пароль
 	if err = s.repository.Create(ctx, card, comment); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
 
@@ -169,12 +163,12 @@ func (s *CardService) GetUserCards(response http.ResponseWriter, request *http.R
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	cards, err := s.repository.GetByUserID(request.Context(), user.ID)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
 	cardsData := make([]payloads.CardWithComment, 0, len(cards))
@@ -192,10 +186,10 @@ func (s *CardService) GetUserCards(response http.ResponseWriter, request *http.R
 	}
 	marshaledBody, err := json.Marshal(cardsData)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
-	if err = helpers.SetHTTPResponse(response, http.StatusOK, marshaledBody); err != nil {
+	if err = responsesetters.SetHTTPResponse(response, http.StatusOK, marshaledBody); err != nil {
 		logger.Log.Error(err)
 	}
 }
@@ -217,18 +211,28 @@ func (s *CardService) DeleteUserCard(response http.ResponseWriter, request *http
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	strID := chi.URLParam(request, "id")
-	id, err := strconv.ParseInt(strID, 10, 64)
+	id, err := getIDFromRequest(request)
 	if err != nil {
-		helpers.ProcessResponseWithStatus("Card ID is not correct", http.StatusBadRequest, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 
 	if err = s.repository.DeleteByUserIDAndID(request.Context(), user.ID, id); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
 		return
+	}
+}
+
+// RegisterRoutes настраивает HTTP-маршруты для CardService, применяя предоставленное промежуточное программное обеспечение для обработки карт.
+func (s *CardService) RegisterRoutes(middlewares ...func(http.Handler) http.Handler) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(middlewares...)
+		r.Post("/card", s.SaveCardHandler)
+		r.Put("/card", s.UpdateCardHandler)
+		r.Get("/card", s.GetUserCards)
+		r.Delete("/card/{id}", s.DeleteUserCard)
 	}
 }

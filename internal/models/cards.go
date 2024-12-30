@@ -7,7 +7,7 @@ import (
 // CardContent представляет собой запись информации о карте, хранящуюся в базе данных.
 // Он включает поля для сведений о карте и связанных с ними метаданных, таких как отметки времени создания и обновления.
 type CardContent struct {
-	ID        int64     `db:"id"`
+	ID        string    `db:"id"`
 	UserID    int64     `db:"user_id"`
 	Number    []byte    `db:"number"`
 	Date      []byte    `db:"date"`
@@ -18,7 +18,7 @@ type CardContent struct {
 }
 
 // GetID возвращает идентификатор экземпляра CardContent в формате int64.
-func (p CardContent) GetID() int64 {
+func (p CardContent) GetID() string {
 	return p.ID
 }
 

@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 create table public.t_pass
 (
-    id         bigserial
+    id         uuid default gen_random_uuid()
         constraint t_pass_pk
             primary key,
     user_id    bigint
@@ -27,11 +27,11 @@ create index t_pass_user_id_index
 
 create table public.t_comment
 (
-    id           bigserial
+    id           uuid default gen_random_uuid()
         constraint t_comment_pk
             primary key,
     content_type smallint,
-    content_id   bigint,
+    content_id   uuid,
     comment      varchar,
     created_at   timestamp default now(),
     updated_at   timestamp default now()

@@ -26,7 +26,7 @@ type processService interface {
 	DecryptItems(items []*payloads.CardWithComment) ([]service.CardData, error)
 	Create(body *payloads.CardWithComment) error
 	Update(body *payloads.CardWithComment) error
-	Delete(id int64) error
+	Delete(id string) error
 }
 
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка карт.

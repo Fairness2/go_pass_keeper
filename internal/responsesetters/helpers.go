@@ -1,4 +1,4 @@
-package helpers
+package responsesetters
 
 import (
 	"encoding/json"

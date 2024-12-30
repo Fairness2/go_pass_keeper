@@ -20,7 +20,7 @@ definitions:
           type: integer
         type: array
       id:
-        type: integer
+        type: string
       number:
         items:
           type: integer
@@ -43,7 +43,7 @@ definitions:
       comment:
         type: string
       id:
-        type: integer
+        type: string
       name:
         items:
           type: integer
@@ -56,7 +56,7 @@ definitions:
       domen:
         type: string
       id:
-        type: integer
+        type: string
       password:
         items:
           type: integer
@@ -85,8 +85,6 @@ definitions:
         items:
           type: integer
         type: array
-      id:
-        type: integer
       number:
         items:
           type: integer
@@ -102,8 +100,6 @@ definitions:
         type: string
       domen:
         type: string
-      id:
-        type: integer
       password:
         items:
           type: integer
@@ -117,8 +113,6 @@ definitions:
     properties:
       comment:
         type: string
-      id:
-        type: integer
       text_data:
         items:
           type: integer
@@ -129,7 +123,7 @@ definitions:
       comment:
         type: string
       id:
-        type: integer
+        type: string
       text_data:
         items:
           type: integer
@@ -140,7 +134,7 @@ definitions:
       comment:
         type: string
       id:
-        type: integer
+        type: string
       name:
         items:
           type: integer

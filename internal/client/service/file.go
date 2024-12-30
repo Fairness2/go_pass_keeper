@@ -129,11 +129,11 @@ func (s *FileService) CreateFile(body *payloads.FileWithComment, filePath string
 }
 
 // DownloadFile загружает файл с указанным идентификатором с сервера и сохраняет его по указанному пути назначения.
-func (s *FileService) DownloadFile(id int64, destFile string) error {
+func (s *FileService) DownloadFile(id string, destFile string) error {
 	req := s.client.GetRequest().
 		SetAuthToken(s.client.GetToken()).
 		SetOutput(destFile)
-	resp, err := req.Get(fmt.Sprintf("%s/download/%d", s.url, id))
+	resp, err := req.Get(fmt.Sprintf("%s/download/%s", s.url, id))
 	if err != nil {
 		return err
 	}

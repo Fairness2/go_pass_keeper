@@ -6,7 +6,7 @@ import (
 
 // TextContent представляет запись текстового контента, включая метаданные, такие как ассоциация пользователя и временные метки.
 type TextContent struct {
-	ID        int64     `db:"id"`
+	ID        string    `db:"id"`
 	UserID    int64     `db:"user_id"`
 	TextData  []byte    `db:"text_data"`
 	CreatedAt time.Time `db:"created_at"`
@@ -14,7 +14,7 @@ type TextContent struct {
 }
 
 // GetID возвращает уникальный идентификатор (ID) экземпляра TextContent.
-func (p TextContent) GetID() int64 {
+func (p TextContent) GetID() string {
 	return p.ID
 }
 

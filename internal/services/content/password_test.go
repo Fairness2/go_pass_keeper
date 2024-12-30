@@ -29,7 +29,7 @@ func TestPasswordService_DeleteUserPasswords(t *testing.T) {
 	}{
 		{
 			name:   "successful_delete",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *PasswordService {
 				repo := NewMockpasswordRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
@@ -48,7 +48,7 @@ func TestPasswordService_DeleteUserPasswords(t *testing.T) {
 		},
 		{
 			name:   "not_authorized",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *PasswordService {
 				repo := NewMockpasswordRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(0)
@@ -85,7 +85,7 @@ func TestPasswordService_DeleteUserPasswords(t *testing.T) {
 		},
 		{
 			name:   "delete_error",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *PasswordService {
 				repo := NewMockpasswordRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("some error")).Times(1)
@@ -138,13 +138,13 @@ func TestPasswordService_GetUserPasswords(t *testing.T) {
 	}{
 		{
 			name:     "successful_get",
-			response: "[{\"id\":1,\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"},{\"id\":2,\"domen\":\"yandex.com\",\"username\":\"YWJvYmEy\",\"password\":\"YWJvYmEy\",\"comment\":\"aboba2\"}]",
+			response: "[{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"},{\"id\":\"1726ef63-756e-4dda-b669-0dcbef37a67f\",\"domen\":\"yandex.com\",\"username\":\"YWJvYmEy\",\"password\":\"YWJvYmEy\",\"comment\":\"aboba2\"}]",
 			setMocks: func() *PasswordService {
 				repo := NewMockpasswordRepository(ctr)
 				repo.EXPECT().GetByUserID(gomock.Any(), gomock.Any()).Return([]models.PasswordWithComment{
 					{
 						PasswordContent: models.PasswordContent{
-							ID:        1,
+							ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 							UserID:    1,
 							Domen:     "google.com",
 							Username:  []byte("aboba"),
@@ -156,7 +156,7 @@ func TestPasswordService_GetUserPasswords(t *testing.T) {
 					},
 					{
 						PasswordContent: models.PasswordContent{
-							ID:        2,
+							ID:        "1726ef63-756e-4dda-b669-0dcbef37a67f",
 							UserID:    1,
 							Domen:     "yandex.com",
 							Username:  []byte("aboba2"),
@@ -275,11 +275,11 @@ func TestPasswordService_UpdatePasswordHandler(t *testing.T) {
 	}{
 		{
 			name: "successful_update",
-			body: "{\"id\":1,\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *PasswordService {
 				repo := NewMockpasswordRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.PasswordContent{
-					ID:        1,
+					ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 					UserID:    1,
 					Domen:     "google.com",
 					Username:  []byte("aboba"),
@@ -303,7 +303,7 @@ func TestPasswordService_UpdatePasswordHandler(t *testing.T) {
 		},
 		{
 			name: "not_authorized",
-			body: "{\"id\":1,\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *PasswordService {
 				repo := NewMockpasswordRepository(ctr)
 				handlers := &PasswordService{
@@ -356,7 +356,7 @@ func TestPasswordService_UpdatePasswordHandler(t *testing.T) {
 		},
 		{
 			name: "not_exists",
-			body: "{\"id\":1,\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *PasswordService {
 				repo := NewMockpasswordRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, repositories.ErrNotExist).Times(1)
@@ -376,7 +376,7 @@ func TestPasswordService_UpdatePasswordHandler(t *testing.T) {
 		},
 		{
 			name: "error_checking_exist",
-			body: "{\"id\":1,\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *PasswordService {
 				repo := NewMockpasswordRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("some_error")).Times(1)
@@ -396,11 +396,11 @@ func TestPasswordService_UpdatePasswordHandler(t *testing.T) {
 		},
 		{
 			name: "error_update",
-			body: "{\"id\":1,\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *PasswordService {
 				repo := NewMockpasswordRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.PasswordContent{
-					ID:        1,
+					ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 					UserID:    1,
 					Domen:     "google.com",
 					Username:  []byte("aboba"),
@@ -512,24 +512,6 @@ func TestPasswordService_SaveTextHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "with_id",
-			body: "{\"id\":1,\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
-			setMocks: func() *PasswordService {
-				repo := NewMockpasswordRepository(ctr)
-				handlers := &PasswordService{
-					repository: repo,
-				}
-				return handlers
-			},
-			expectedStatus: http.StatusBadRequest,
-			authMiddleware: func(next http.Handler) http.Handler {
-				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					newR := r.WithContext(context.WithValue(r.Context(), token.UserKey, &models.User{ID: 1}))
-					next.ServeHTTP(w, newR)
-				})
-			},
-		},
-		{
 			name: "error_update",
 			body: "{\"domen\":\"google.com\",\"username\":\"YWJvYmE=\",\"password\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *PasswordService {
@@ -578,13 +560,13 @@ func TestNewPasswordService(t *testing.T) {
 	tests := []struct {
 		name          string
 		expectedError bool
-		getExec       func() repositories.SQLExecutor
+		getExec       func() passwordRepository
 	}{
 		{
 			name:          "successful_initialization",
 			expectedError: false,
-			getExec: func() repositories.SQLExecutor {
-				return NewMockSQLExecutor(ctr)
+			getExec: func() passwordRepository {
+				return NewMockpasswordRepository(ctr)
 			},
 		},
 	}
@@ -593,6 +575,53 @@ func TestNewPasswordService(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			service := NewPasswordService(tt.getExec())
 			assert.NotNil(t, service, "NewPasswordService should not return nil")
+		})
+	}
+}
+
+func TestPasswordService_RegisterRoutes(t *testing.T) {
+	routes := []url{
+		{"/password", http.MethodPost},
+		{"/password", http.MethodPut},
+		{"/password", http.MethodGet},
+		{"/password/aboba", http.MethodDelete},
+	}
+	tests := []struct {
+		name           string
+		middleware     func(http.Handler) http.Handler
+		expectedRoutes []url
+	}{
+		{
+			name:           "routes_without_middleware",
+			middleware:     nil,
+			expectedRoutes: routes,
+		},
+		{
+			name: "routes_with_middleware",
+			middleware: func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("X-Test-Middleware", "Active")
+					next.ServeHTTP(w, r)
+				})
+			},
+			expectedRoutes: routes,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			handlers := &PasswordService{}
+			router := chi.NewRouter()
+			if tt.middleware != nil {
+				router.Group(handlers.RegisterRoutes(tt.middleware))
+			} else {
+				router.Group(handlers.RegisterRoutes())
+			}
+			for _, r := range tt.expectedRoutes {
+				res := router.Match(chi.NewRouteContext(), r.method, r.path)
+				assert.True(t, res)
+			}
 		})
 	}
 }

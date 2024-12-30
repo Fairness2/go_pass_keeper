@@ -21,7 +21,7 @@ type SQLSet struct {
 
 // Contentable представляет сущность, которая предоставляет уникальный идентификатор с помощью метода GetID.
 type Contentable interface {
-	GetID() int64
+	GetID() string
 }
 
 // CrudRepository представляет собой хранилище для управления контентными сущностями и связанными с ними комментариями в базе данных.
@@ -39,7 +39,7 @@ func (pr *CrudRepository[T, Y]) Create(ctx context.Context, content T, comment m
 		return err
 	}
 	defer tx.Rollback()
-	if content.GetID() != 0 {
+	if content.GetID() != "" {
 		err = pr.updateWithComment(ctx, tx, content, comment)
 	} else {
 		err = pr.createWithComment(ctx, tx, content, comment)
@@ -58,7 +58,7 @@ func (pr *CrudRepository[T, Y]) createWithComment(ctx context.Context, tx ITX, c
 	}
 
 	row := smth.QueryRowxContext(ctx, content)
-	var id int64
+	var id string
 	if err := row.Scan(&id); err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (pr *CrudRepository[T, Y]) GetByUserID(ctx context.Context, userID int64) (
 }
 
 // GetByUserIDAndId извлекает информацию о контенте по его идентификатору и идентификатору связанного пользователя. Возвращает текст или ошибку.
-func (pr *CrudRepository[T, Y]) GetByUserIDAndId(ctx context.Context, userID int64, id int64) (*T, error) {
+func (pr *CrudRepository[T, Y]) GetByUserIDAndId(ctx context.Context, userID int64, id string) (*T, error) {
 	row := pr.db.QueryRowxContext(ctx, pr.sqlSet.GetContentByUserIDAndID, id, userID)
 	err := row.Err()
 	if err != nil {
@@ -106,7 +106,7 @@ func (pr *CrudRepository[T, Y]) GetByUserIDAndId(ctx context.Context, userID int
 // DeleteByUserIDAndID удаляет информацию о контенте и связанные с ним комментарии для данного идентификатора пользователя и идентификатора текста.
 // Он выполняет два запроса на удаление в рамках транзакции базы данных.
 // Возвращает ошибку, если транзакция или запросы завершаются неудачно.
-func (pr *CrudRepository[T, Y]) DeleteByUserIDAndID(ctx context.Context, userID int64, id int64) error {
+func (pr *CrudRepository[T, Y]) DeleteByUserIDAndID(ctx context.Context, userID int64, id string) error {
 	tx, err := pr.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return err

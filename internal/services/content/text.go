@@ -4,24 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/asaskevich/govalidator"
 	"github.com/go-chi/chi/v5"
 	"net/http"
-	"passkeeper/internal/helpers"
+	"passkeeper/internal/commonerrors"
 	"passkeeper/internal/logger"
 	"passkeeper/internal/models"
 	"passkeeper/internal/payloads"
 	"passkeeper/internal/repositories"
+	"passkeeper/internal/responsesetters"
 	"passkeeper/internal/token"
-	"strconv"
 	"time"
 )
 
 // textRepository определяет методы управления текстовым содержимым пользователя и связанными с ним комментариями в системе.
 type textRepository interface {
 	Create(ctx context.Context, content models.TextContent, comment models.Comment) error
-	GetByUserIDAndId(ctx context.Context, userID int64, id int64) (*models.TextContent, error)
+	GetByUserIDAndId(ctx context.Context, userID int64, id string) (*models.TextContent, error)
 	GetByUserID(ctx context.Context, userID int64) ([]models.TextWithComment, error)
-	DeleteByUserIDAndID(ctx context.Context, userID int64, id int64) error
+	DeleteByUserIDAndID(ctx context.Context, userID int64, id string) error
 }
 
 // TextService предоставляет методы для управления текстами пользователей и соответствующими комментариями в системе.
@@ -30,9 +31,9 @@ type TextService struct {
 }
 
 // NewTextService инициализирует и возвращает новый экземпляр TextService, настроенный с использованием предоставленной базой.
-func NewTextService(dbPool repositories.SQLExecutor) *TextService {
+func NewTextService(rep textRepository) *TextService {
 	return &TextService{
-		repository: repositories.NewTextRepository(dbPool),
+		repository: rep,
 	}
 }
 
@@ -55,19 +56,14 @@ func (s *TextService) SaveTextHandler(response http.ResponseWriter, request *htt
 	var body payloads.SaveText
 	err := getSaveBody(request, &body)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
-		return
-	}
-	// Для создания нельзя передавать идентификатор
-	if body.ID != 0 {
-		helpers.ProcessResponseWithStatus("ID should be empty", http.StatusBadRequest, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	pass := models.TextContent{
@@ -79,7 +75,7 @@ func (s *TextService) SaveTextHandler(response http.ResponseWriter, request *htt
 		Comment:     body.Comment,
 	}
 	if err = s.repository.Create(request.Context(), pass, comment); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
 
@@ -100,21 +96,21 @@ func (s *TextService) SaveTextHandler(response http.ResponseWriter, request *htt
 //	@Router			/api/content/text [put]
 func (s *TextService) UpdateTextHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	var body payloads.SaveText
+	var body payloads.UpdateText
 	err := getSaveBody(request, &body)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 	// Для создания нельзя передавать идентификатор
-	if body.ID <= 0 {
-		helpers.ProcessResponseWithStatus("ID should not be empty", http.StatusBadRequest, response)
+	if body.ID == "" {
+		responsesetters.ProcessResponseWithStatus("ID should not be empty", http.StatusBadRequest, response)
 		return
 	}
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	text := models.TextContent{
@@ -134,16 +130,16 @@ func (s *TextService) UpdateTextHandler(response http.ResponseWriter, request *h
 	_, err = s.repository.GetByUserIDAndId(ctx, text.UserID, text.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
-			helpers.ProcessResponseWithStatus("Text not found", http.StatusNotFound, response)
+			responsesetters.ProcessResponseWithStatus("Text not found", http.StatusNotFound, response)
 			return
 		} else {
-			helpers.SetInternalError(err, response)
+			responsesetters.SetInternalError(err, response)
 			return
 		}
 	}
 	// Обновляем пароль
 	if err = s.repository.Create(ctx, text, comment); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
 
@@ -163,12 +159,12 @@ func (s *TextService) GetUserTexts(response http.ResponseWriter, request *http.R
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	texts, err := s.repository.GetByUserID(request.Context(), user.ID)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
 	textsData := make([]payloads.TextWithComment, 0, len(texts))
@@ -183,10 +179,10 @@ func (s *TextService) GetUserTexts(response http.ResponseWriter, request *http.R
 	}
 	marshaledBody, err := json.Marshal(textsData)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
-	if err = helpers.SetHTTPResponse(response, http.StatusOK, marshaledBody); err != nil {
+	if err = responsesetters.SetHTTPResponse(response, http.StatusOK, marshaledBody); err != nil {
 		logger.Log.Error(err)
 	}
 }
@@ -208,17 +204,38 @@ func (s *TextService) DeleteUserText(response http.ResponseWriter, request *http
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	strID := chi.URLParam(request, "id")
-	id, err := strconv.ParseInt(strID, 10, 64)
+	id, err := getIDFromRequest(request)
 	if err != nil {
-		helpers.ProcessResponseWithStatus("Text ID is not correct", http.StatusBadRequest, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 	if err = s.repository.DeleteByUserIDAndID(request.Context(), user.ID, id); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
 		return
+	}
+}
+
+// getIDFromRequest извлекает и проверяет параметр «id» из предоставленного HTTP-запроса.
+func getIDFromRequest(request *http.Request) (string, error) {
+	id := chi.URLParam(request, "id")
+	p := payloads.IDPayload{ID: id}
+	ok, err := govalidator.ValidateStruct(p)
+	if !ok {
+		return "", &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
+	}
+	return id, nil
+}
+
+// RegisterRoutes настраивает HTTP-маршруты для TextService, применяя предоставленное промежуточное программное обеспечение для обработки текстовых запросов.
+func (s *TextService) RegisterRoutes(middlewares ...func(http.Handler) http.Handler) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(middlewares...)
+		r.Post("/text", s.SaveTextHandler)
+		r.Put("/text", s.UpdateTextHandler)
+		r.Get("/text", s.GetUserTexts)
+		r.Delete("/text/{id}", s.DeleteUserText)
 	}
 }

@@ -107,12 +107,12 @@ func TestFileService_DeleteUserFiles(t *testing.T) {
 	}{
 		{
 			name:   "successful_delete",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.FileContent{
-					ID:        1,
+					ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 					UserID:    userID,
 					Name:      []byte("aboba"),
 					FilePath:  fileName,
@@ -138,7 +138,7 @@ func TestFileService_DeleteUserFiles(t *testing.T) {
 		},
 		{
 			name:   "not_authorized",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(0)
@@ -179,12 +179,12 @@ func TestFileService_DeleteUserFiles(t *testing.T) {
 		},
 		{
 			name:   "delete_error",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("some error")).Times(1)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.FileContent{
-					ID:        1,
+					ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 					UserID:    userID,
 					Name:      []byte("aboba"),
 					FilePath:  fileName,
@@ -208,7 +208,7 @@ func TestFileService_DeleteUserFiles(t *testing.T) {
 		},
 		{
 			name:   "not_exist_file",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("some error")).Times(0)
@@ -230,7 +230,7 @@ func TestFileService_DeleteUserFiles(t *testing.T) {
 		},
 		{
 			name:   "error_get_file",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("some error")).Times(0)
@@ -252,12 +252,12 @@ func TestFileService_DeleteUserFiles(t *testing.T) {
 		},
 		{
 			name:   "error_delete_file",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().DeleteByUserIDAndID(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(0)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.FileContent{
-					ID:        1,
+					ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 					UserID:    forbiddenUserID,
 					Name:      []byte("aboba"),
 					FilePath:  fileName,
@@ -316,14 +316,14 @@ func TestNewFileService(t *testing.T) {
 	tests := []struct {
 		name          string
 		expectedError bool
-		getExec       func() repositories.SQLExecutor
+		getExec       func() fileRepository
 		path          string
 	}{
 		{
 			name:          "successful_initialization",
 			expectedError: false,
-			getExec: func() repositories.SQLExecutor {
-				return NewMockSQLExecutor(ctr)
+			getExec: func() fileRepository {
+				return NewMockfileRepository(ctr)
 			},
 			path: "some_path",
 		},
@@ -350,13 +350,13 @@ func TestFileService_GetUserFiles(t *testing.T) {
 	}{
 		{
 			name:     "successful_get",
-			response: "[{\"id\":1,\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"},{\"id\":2,\"name\":\"YWJvYmEy\",\"comment\":\"aboba2\"}]",
+			response: "[{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"},{\"id\":\"1726ef63-756e-4dda-b669-0dcbef37a67f\",\"name\":\"YWJvYmEy\",\"comment\":\"aboba2\"}]",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().GetByUserID(gomock.Any(), gomock.Any()).Return([]models.FileWithComment{
 					{
 						FileContent: models.FileContent{
-							ID:        1,
+							ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 							UserID:    1,
 							Name:      []byte("aboba"),
 							FilePath:  "test.txt",
@@ -367,7 +367,7 @@ func TestFileService_GetUserFiles(t *testing.T) {
 					},
 					{
 						FileContent: models.FileContent{
-							ID:        2,
+							ID:        "1726ef63-756e-4dda-b669-0dcbef37a67f",
 							UserID:    1,
 							Name:      []byte("aboba2"),
 							FilePath:  "test2.txt",
@@ -485,11 +485,11 @@ func TestFileService_UpdateFileHandler(t *testing.T) {
 	}{
 		{
 			name: "successful_update",
-			body: "{\"id\":1,\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.FileContent{
-					ID:        1,
+					ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 					UserID:    1,
 					Name:      []byte("aboba"),
 					FilePath:  "test.txt",
@@ -512,7 +512,7 @@ func TestFileService_UpdateFileHandler(t *testing.T) {
 		},
 		{
 			name: "not_authorized",
-			body: "{\"id\":1,\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				handlers := &FileService{
@@ -565,7 +565,7 @@ func TestFileService_UpdateFileHandler(t *testing.T) {
 		},
 		{
 			name: "not_exists",
-			body: "{\"id\":1,\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, repositories.ErrNotExist).Times(1)
@@ -585,7 +585,7 @@ func TestFileService_UpdateFileHandler(t *testing.T) {
 		},
 		{
 			name: "error_checking_exist",
-			body: "{\"id\":1,\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("some_error")).Times(1)
@@ -605,11 +605,11 @@ func TestFileService_UpdateFileHandler(t *testing.T) {
 		},
 		{
 			name: "error_update",
-			body: "{\"id\":1,\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
+			body: "{\"id\":\"f25172cc-e7d9-404c-a52d-0353c253a422\",\"name\":\"YWJvYmE=\",\"comment\":\"aboba\"}",
 			setMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.FileContent{
-					ID:        1,
+					ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 					UserID:    1,
 					Name:      []byte("aboba"),
 					FilePath:  "test.txt",
@@ -1091,11 +1091,11 @@ func TestFileService_DownloadFileHandler(t *testing.T) {
 	}{
 		{
 			name:   "successful_download",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setupMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.FileContent{
-					ID:        1,
+					ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 					UserID:    1,
 					Name:      []byte("testfile"),
 					FilePath:  "testfile.txt",
@@ -1125,7 +1125,7 @@ func TestFileService_DownloadFileHandler(t *testing.T) {
 		},
 		{
 			name:   "unauthorized_user",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setupMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				return &FileService{repository: repo, filePath: tmpDir}
@@ -1160,7 +1160,7 @@ func TestFileService_DownloadFileHandler(t *testing.T) {
 		},
 		{
 			name:   "file_not_found",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setupMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, repositories.ErrNotExist).Times(1)
@@ -1179,7 +1179,7 @@ func TestFileService_DownloadFileHandler(t *testing.T) {
 		},
 		{
 			name:   "internal_server_error",
-			textId: "1",
+			textId: "f25172cc-e7d9-404c-a52d-0353c253a422",
 			setupMocks: func() *FileService {
 				repo := NewMockfileRepository(ctr)
 				repo.EXPECT().GetByUserIDAndId(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("some error")).Times(1)
@@ -1225,6 +1225,54 @@ func TestFileService_DownloadFileHandler(t *testing.T) {
 			if tt.expectedStatus == http.StatusOK {
 				content, _ := os.ReadFile(filePath)
 				assert.Equal(t, string(content), string(res.Body()), "file content does not match")
+			}
+		})
+	}
+}
+
+func TestFileService_RegisterRoutes(t *testing.T) {
+	routes := []url{
+		{"/file", http.MethodPost},
+		{"/file", http.MethodPut},
+		{"/file", http.MethodGet},
+		{"/file/aboba", http.MethodDelete},
+		{"/file/download/aboba", http.MethodGet},
+	}
+	tests := []struct {
+		name           string
+		middleware     func(http.Handler) http.Handler
+		expectedRoutes []url
+	}{
+		{
+			name:           "routes_without_middleware",
+			middleware:     nil,
+			expectedRoutes: routes,
+		},
+		{
+			name: "routes_with_middleware",
+			middleware: func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("X-Test-Middleware", "Active")
+					next.ServeHTTP(w, r)
+				})
+			},
+			expectedRoutes: routes,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			handlers := &FileService{}
+			router := chi.NewRouter()
+			if tt.middleware != nil {
+				router.Group(handlers.RegisterRoutes(tt.middleware))
+			} else {
+				router.Group(handlers.RegisterRoutes())
+			}
+			for _, r := range tt.expectedRoutes {
+				res := router.Match(chi.NewRouteContext(), r.method, r.path)
+				assert.True(t, res)
 			}
 		})
 	}

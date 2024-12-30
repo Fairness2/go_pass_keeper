@@ -45,7 +45,7 @@ func TestFileWithComment_Encrypt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			item := &FileWithComment{
-				ID:      1,
+				ID:      "f25172cc-e7d9-404c-a52d-0353c253a422",
 				Name:    tt.inputName,
 				Comment: "example comment",
 			}
@@ -110,7 +110,7 @@ func TestFileWithComment_Decrypt(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			item := &FileWithComment{
-				ID:      1,
+				ID:      "f25172cc-e7d9-404c-a52d-0353c253a422",
 				Name:    tt.inputName,
 				Comment: "example comment",
 			}

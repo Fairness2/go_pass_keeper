@@ -11,13 +11,12 @@ import (
 	"net/http"
 	"os"
 	"passkeeper/internal/commonerrors"
-	"passkeeper/internal/helpers"
 	"passkeeper/internal/logger"
 	"passkeeper/internal/models"
 	"passkeeper/internal/payloads"
 	"passkeeper/internal/repositories"
+	"passkeeper/internal/responsesetters"
 	"passkeeper/internal/token"
-	"strconv"
 	"time"
 )
 
@@ -28,9 +27,9 @@ var (
 // fileRepository определяет методы взаимодействия с файлами и соответствующими комментариями в системе.
 type fileRepository interface {
 	Create(ctx context.Context, content models.FileContent, comment models.Comment) error
-	GetByUserIDAndId(ctx context.Context, userID int64, id int64) (*models.FileContent, error)
+	GetByUserIDAndId(ctx context.Context, userID int64, id string) (*models.FileContent, error)
 	GetByUserID(ctx context.Context, userID int64) ([]models.FileWithComment, error)
-	DeleteByUserIDAndID(ctx context.Context, userID int64, id int64) error
+	DeleteByUserIDAndID(ctx context.Context, userID int64, id string) error
 }
 
 // FileService предоставляет методы для управления файлами пользователей и соответствующими комментариями в системе.
@@ -42,9 +41,9 @@ type FileService struct {
 }
 
 // NewFileService инициализирует и возвращает новый экземпляр FileService, настроенный с использованием предоставленной базой.
-func NewFileService(dbPool repositories.SQLExecutor, filePath string) *FileService {
+func NewFileService(rep fileRepository, filePath string) *FileService {
 	return &FileService{
-		repository:  repositories.NewFileRepository(dbPool),
+		repository:  rep,
 		filePath:    filePath,
 		permissions: os.ModePerm,
 		maxFormSize: 10 << 20,
@@ -71,17 +70,17 @@ func (s *FileService) SaveFileHandler(response http.ResponseWriter, request *htt
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	// Читаем тело запроса
 	fileBody, commentBody, err := s.getSaveFileBody(request, user.ID)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 	if err = s.repository.Create(request.Context(), fileBody, commentBody); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 		if s.deleteFile(fileBody.FilePath, user.ID) != nil {
 			logger.Log.Error(err)
 		}
@@ -172,18 +171,18 @@ func (s *FileService) UpdateFileHandler(response http.ResponseWriter, request *h
 	var body payloads.UpdateFile
 	err := getSaveBody(request, &body)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 	// Для создания нельзя передавать идентификатор
-	if body.ID <= 0 {
-		helpers.ProcessResponseWithStatus("ID should not be empty", http.StatusBadRequest, response)
+	if body.ID == "" {
+		responsesetters.ProcessResponseWithStatus("ID should not be empty", http.StatusBadRequest, response)
 		return
 	}
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	info := models.FileContent{
@@ -203,16 +202,16 @@ func (s *FileService) UpdateFileHandler(response http.ResponseWriter, request *h
 	_, err = s.repository.GetByUserIDAndId(ctx, user.ID, info.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
-			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
+			responsesetters.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
 			return
 		} else {
-			helpers.SetInternalError(err, response)
+			responsesetters.SetInternalError(err, response)
 			return
 		}
 	}
 	// Обновляем пароль
 	if err = s.repository.Create(ctx, info, comment); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
 
@@ -232,12 +231,12 @@ func (s *FileService) GetUserFiles(response http.ResponseWriter, request *http.R
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	files, err := s.repository.GetByUserID(request.Context(), user.ID)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
 	filesData := make([]payloads.FileWithComment, 0, len(files))
@@ -250,10 +249,10 @@ func (s *FileService) GetUserFiles(response http.ResponseWriter, request *http.R
 	}
 	marshaledBody, err := json.Marshal(filesData)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
-	if err = helpers.SetHTTPResponse(response, http.StatusOK, marshaledBody); err != nil {
+	if err = responsesetters.SetHTTPResponse(response, http.StatusOK, marshaledBody); err != nil {
 		logger.Log.Error(err)
 	}
 }
@@ -275,32 +274,31 @@ func (s *FileService) DeleteUserFile(response http.ResponseWriter, request *http
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	strID := chi.URLParam(request, "id")
-	id, err := strconv.ParseInt(strID, 10, 64)
+	id, err := getIDFromRequest(request)
 	if err != nil {
-		helpers.ProcessResponseWithStatus("File ID is not correct", http.StatusBadRequest, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 	ctx := request.Context()
 	file, err := s.repository.GetByUserIDAndId(ctx, user.ID, id)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
-			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
+			responsesetters.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
 		} else {
-			helpers.SetInternalError(err, response)
+			responsesetters.SetInternalError(err, response)
 		}
 		return
 	}
 	if err = s.deleteFile(file.FilePath, user.ID); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t delete file", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t delete file", http.StatusInternalServerError, response)
 		return
 	}
 
 	if err = s.repository.DeleteByUserIDAndID(ctx, user.ID, id); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
 		return
 	}
 }
@@ -322,22 +320,21 @@ func (s *FileService) DownloadFileHandler(response http.ResponseWriter, request 
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	strID := chi.URLParam(request, "id")
-	id, err := strconv.ParseInt(strID, 10, 64)
+	id, err := getIDFromRequest(request)
 	if err != nil {
-		helpers.ProcessResponseWithStatus("File ID is not correct", http.StatusBadRequest, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 	file, err := s.repository.GetByUserIDAndId(request.Context(), user.ID, id)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
-			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
+			responsesetters.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
 			return
 		} else {
-			helpers.SetInternalError(err, response)
+			responsesetters.SetInternalError(err, response)
 			return
 		}
 	}
@@ -345,15 +342,15 @@ func (s *FileService) DownloadFileHandler(response http.ResponseWriter, request 
 	fileContent, err := os.Open(filePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			helpers.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
+			responsesetters.ProcessResponseWithStatus("File not found", http.StatusNotFound, response)
 			return
 		}
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
 	fileStat, err := fileContent.Stat()
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 	}
 	response.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", file.FilePath))
 	response.Header().Set("Content-Type", "application/octet-stream")
@@ -365,7 +362,19 @@ func (s *FileService) DownloadFileHandler(response http.ResponseWriter, request 
 
 	// Write the file to the response
 	if _, err = io.Copy(response, fileContent); err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
+	}
+}
+
+// RegisterRoutes настраивает HTTP-маршруты для FileService, применяя предоставленное промежуточное программное обеспечение для обработки файлов.
+func (s *FileService) RegisterRoutes(middlewares ...func(http.Handler) http.Handler) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(middlewares...)
+		r.Post("/file", s.SaveFileHandler)
+		r.Put("/file", s.UpdateFileHandler)
+		r.Get("/file", s.GetUserFiles)
+		r.Delete("/file/{id}", s.DeleteUserFile)
+		r.Get("/file/download/{id}", s.DownloadFileHandler)
 	}
 }

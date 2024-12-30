@@ -38,8 +38,8 @@ func TestCrudRepository_Create(t *testing.T) {
 				tx.EXPECT().Commit().Return(nil).Times(1)
 				tx.EXPECT().Rollback().Return(nil).Times(1)
 				smth.EXPECT().QueryRowxContext(gomock.Any(), gomock.Any()).Return(mockRow).Times(1)
-				mockRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(id *int64) error {
-					*id = 1
+				mockRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(id *string) error {
+					*id = "f25172cc-e7d9-404c-a52d-0353c253a422"
 					return nil
 				}).Times(1)
 
@@ -73,14 +73,14 @@ func TestCrudRepository_Create(t *testing.T) {
 				return mockDB
 			},
 			content: models.TextContent{
-				ID:        1,
+				ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 				UserID:    1,
 				TextData:  []byte("test"),
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
 			comment: models.Comment{
-				ContentID:   1,
+				ContentID:   "f25172cc-e7d9-404c-a52d-0353c253a422",
 				ContentType: models.TypeText,
 				Comment:     "Test comment",
 				CreatedAt:   time.Now(),
@@ -102,14 +102,14 @@ func TestCrudRepository_Create(t *testing.T) {
 				return mockDB
 			},
 			content: models.TextContent{
-				ID:        1,
+				ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 				UserID:    1,
 				TextData:  []byte("test"),
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
 			comment: models.Comment{
-				ContentID:   1,
+				ContentID:   "f25172cc-e7d9-404c-a52d-0353c253a422",
 				ContentType: models.TypeText,
 				Comment:     "Test comment",
 				CreatedAt:   time.Now(),
@@ -131,8 +131,8 @@ func TestCrudRepository_Create(t *testing.T) {
 				tx.EXPECT().Commit().Return(nil).Times(0)
 				tx.EXPECT().Rollback().Return(nil).Times(1)
 				smth.EXPECT().QueryRowxContext(gomock.Any(), gomock.Any()).Return(mockRow).Times(0)
-				mockRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(id *int64) error {
-					*id = 1
+				mockRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(id *string) error {
+					*id = "f25172cc-e7d9-404c-a52d-0353c253a422"
 					return nil
 				}).Times(0)
 
@@ -166,7 +166,7 @@ func TestCrudRepository_Create(t *testing.T) {
 				tx.EXPECT().Commit().Return(nil).Times(0)
 				tx.EXPECT().Rollback().Return(nil).Times(1)
 				smth.EXPECT().QueryRowxContext(gomock.Any(), gomock.Any()).Return(mockRow).Times(1)
-				mockRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(id *int64) error {
+				mockRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(id *string) error {
 					return expectedErr
 				}).Times(1)
 
@@ -200,8 +200,8 @@ func TestCrudRepository_Create(t *testing.T) {
 				tx.EXPECT().Commit().Return(nil).Times(0)
 				tx.EXPECT().Rollback().Return(nil).Times(1)
 				smth.EXPECT().QueryRowxContext(gomock.Any(), gomock.Any()).Return(mockRow).Times(1)
-				mockRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(id *int64) error {
-					*id = 1
+				mockRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(id *string) error {
+					*id = "f25172cc-e7d9-404c-a52d-0353c253a422"
 					return nil
 				}).Times(1)
 
@@ -235,8 +235,8 @@ func TestCrudRepository_Create(t *testing.T) {
 				tx.EXPECT().Commit().Return(expectedErr).Times(1)
 				tx.EXPECT().Rollback().Return(nil).Times(1)
 				smth.EXPECT().QueryRowxContext(gomock.Any(), gomock.Any()).Return(mockRow).Times(1)
-				mockRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(id *int64) error {
-					*id = 1
+				mockRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(id *string) error {
+					*id = "f25172cc-e7d9-404c-a52d-0353c253a422"
 					return nil
 				}).Times(1)
 
@@ -270,14 +270,14 @@ func TestCrudRepository_Create(t *testing.T) {
 				return mockDB
 			},
 			content: models.TextContent{
-				ID:        1,
+				ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 				UserID:    1,
 				TextData:  []byte("test"),
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
 			comment: models.Comment{
-				ContentID:   1,
+				ContentID:   "f25172cc-e7d9-404c-a52d-0353c253a422",
 				ContentType: models.TypeText,
 				Comment:     "Test comment",
 				CreatedAt:   time.Now(),
@@ -300,14 +300,14 @@ func TestCrudRepository_Create(t *testing.T) {
 				return mockDB
 			},
 			content: models.TextContent{
-				ID:        1,
+				ID:        "f25172cc-e7d9-404c-a52d-0353c253a422",
 				UserID:    1,
 				TextData:  []byte("test"),
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),
 			},
 			comment: models.Comment{
-				ContentID:   1,
+				ContentID:   "f25172cc-e7d9-404c-a52d-0353c253a422",
 				ContentType: models.TypeText,
 				Comment:     "Test comment",
 				CreatedAt:   time.Now(),
@@ -340,7 +340,7 @@ func TestCrudRepository_GetByUserID(t *testing.T) {
 	want := []models.TextWithComment{
 		{
 			TextContent: models.TextContent{
-				ID:       1,
+				ID:       "f25172cc-e7d9-404c-a52d-0353c253a422",
 				UserID:   1,
 				TextData: []byte("test1"),
 			},
@@ -348,7 +348,7 @@ func TestCrudRepository_GetByUserID(t *testing.T) {
 		},
 		{
 			TextContent: models.TextContent{
-				ID:       2,
+				ID:       "1726ef63-756e-4dda-b669-0dcbef37a67f",
 				UserID:   1,
 				TextData: []byte("test2"),
 			},
@@ -436,7 +436,7 @@ func TestCrudRepository_GetByUserIDAndId(t *testing.T) {
 		name    string
 		getExec func() SQLExecutor
 		userID  int64
-		id      int64
+		id      string
 		want    *models.TextContent
 		wantErr error
 	}{
@@ -446,7 +446,7 @@ func TestCrudRepository_GetByUserIDAndId(t *testing.T) {
 				mockDB := NewMockSQLExecutor(ctr)
 				row := NewMockIRow(ctr)
 				row.EXPECT().StructScan(gomock.Any()).DoAndReturn(func(dest *models.TextContent) error {
-					dest.ID = 1
+					dest.ID = "f25172cc-e7d9-404c-a52d-0353c253a422"
 					dest.UserID = 1
 					dest.TextData = []byte("test1")
 					return nil
@@ -456,9 +456,9 @@ func TestCrudRepository_GetByUserIDAndId(t *testing.T) {
 				return mockDB
 			},
 			userID: 1,
-			id:     1,
+			id:     "f25172cc-e7d9-404c-a52d-0353c253a422",
 			want: &models.TextContent{
-				ID:       1,
+				ID:       "f25172cc-e7d9-404c-a52d-0353c253a422",
 				UserID:   1,
 				TextData: []byte("test1"),
 			},
@@ -474,7 +474,7 @@ func TestCrudRepository_GetByUserIDAndId(t *testing.T) {
 				return mockDB
 			},
 			userID:  1,
-			id:      1,
+			id:      "f25172cc-e7d9-404c-a52d-0353c253a422",
 			want:    nil,
 			wantErr: expectedErr,
 		},
@@ -489,7 +489,7 @@ func TestCrudRepository_GetByUserIDAndId(t *testing.T) {
 				return mockDB
 			},
 			userID:  1,
-			id:      1,
+			id:      "f25172cc-e7d9-404c-a52d-0353c253a422",
 			want:    nil,
 			wantErr: ErrNotExist,
 		},
@@ -504,7 +504,7 @@ func TestCrudRepository_GetByUserIDAndId(t *testing.T) {
 				return mockDB
 			},
 			userID:  1,
-			id:      1,
+			id:      "f25172cc-e7d9-404c-a52d-0353c253a422",
 			want:    nil,
 			wantErr: expectedErr,
 		},
@@ -537,7 +537,7 @@ func TestCrudRepository_DeleteByUserIDAndID(t *testing.T) {
 		name    string
 		getExec func() SQLExecutor
 		userID  int64
-		id      int64
+		id      string
 		wantErr error
 	}{
 		{
@@ -547,15 +547,15 @@ func TestCrudRepository_DeleteByUserIDAndID(t *testing.T) {
 				tx := NewMockITX(ctr)
 
 				mockDB.EXPECT().BeginTxx(gomock.Any(), gomock.Any()).Return(tx, nil).Times(1)
-				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteContentByUserIDAndID, int64(1), int64(1)).Return(nil, nil).Times(1)
-				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteCommentByContentID, models.TypeText, int64(1)).Return(nil, nil).Times(1)
+				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteContentByUserIDAndID, "f25172cc-e7d9-404c-a52d-0353c253a422", int64(1)).Return(nil, nil).Times(1)
+				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteCommentByContentID, models.TypeText, "f25172cc-e7d9-404c-a52d-0353c253a422").Return(nil, nil).Times(1)
 				tx.EXPECT().Commit().Return(nil).Times(1)
 				tx.EXPECT().Rollback().Return(nil).Times(1)
 
 				return mockDB
 			},
 			userID:  1,
-			id:      1,
+			id:      "f25172cc-e7d9-404c-a52d-0353c253a422",
 			wantErr: nil,
 		},
 		{
@@ -566,7 +566,7 @@ func TestCrudRepository_DeleteByUserIDAndID(t *testing.T) {
 				return mockDB
 			},
 			userID:  1,
-			id:      1,
+			id:      "f25172cc-e7d9-404c-a52d-0353c253a422",
 			wantErr: expectedErr,
 		},
 		{
@@ -576,12 +576,12 @@ func TestCrudRepository_DeleteByUserIDAndID(t *testing.T) {
 				tx := NewMockITX(ctr)
 
 				mockDB.EXPECT().BeginTxx(gomock.Any(), gomock.Any()).Return(tx, nil).Times(1)
-				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteContentByUserIDAndID, int64(1), int64(1)).Return(nil, expectedErr).Times(1)
+				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteContentByUserIDAndID, "f25172cc-e7d9-404c-a52d-0353c253a422", int64(1)).Return(nil, expectedErr).Times(1)
 				tx.EXPECT().Rollback().Return(nil).Times(1)
 				return mockDB
 			},
 			userID:  1,
-			id:      1,
+			id:      "f25172cc-e7d9-404c-a52d-0353c253a422",
 			wantErr: expectedErr,
 		},
 		{
@@ -591,13 +591,13 @@ func TestCrudRepository_DeleteByUserIDAndID(t *testing.T) {
 				tx := NewMockITX(ctr)
 
 				mockDB.EXPECT().BeginTxx(gomock.Any(), gomock.Any()).Return(tx, nil).Times(1)
-				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteContentByUserIDAndID, int64(1), int64(1)).Return(nil, nil).Times(1)
-				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteCommentByContentID, models.TypeText, int64(1)).Return(nil, expectedErr).Times(1)
+				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteContentByUserIDAndID, "f25172cc-e7d9-404c-a52d-0353c253a422", int64(1)).Return(nil, nil).Times(1)
+				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteCommentByContentID, models.TypeText, "f25172cc-e7d9-404c-a52d-0353c253a422").Return(nil, expectedErr).Times(1)
 				tx.EXPECT().Rollback().Return(nil).Times(1)
 				return mockDB
 			},
 			userID:  1,
-			id:      1,
+			id:      "f25172cc-e7d9-404c-a52d-0353c253a422",
 			wantErr: expectedErr,
 		},
 		{
@@ -607,14 +607,14 @@ func TestCrudRepository_DeleteByUserIDAndID(t *testing.T) {
 				tx := NewMockITX(ctr)
 
 				mockDB.EXPECT().BeginTxx(gomock.Any(), gomock.Any()).Return(tx, nil).Times(1)
-				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteContentByUserIDAndID, int64(1), int64(1)).Return(nil, nil).Times(1)
-				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteCommentByContentID, models.TypeText, int64(1)).Return(nil, nil).Times(1)
+				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteContentByUserIDAndID, "f25172cc-e7d9-404c-a52d-0353c253a422", int64(1)).Return(nil, nil).Times(1)
+				tx.EXPECT().ExecContext(gomock.Any(), TextSQLSet.DeleteCommentByContentID, models.TypeText, "f25172cc-e7d9-404c-a52d-0353c253a422").Return(nil, nil).Times(1)
 				tx.EXPECT().Commit().Return(expectedErr).Times(1)
 				tx.EXPECT().Rollback().Return(nil).Times(1)
 				return mockDB
 			},
 			userID:  1,
-			id:      1,
+			id:      "f25172cc-e7d9-404c-a52d-0353c253a422",
 			wantErr: expectedErr,
 		},
 	}

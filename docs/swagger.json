@@ -936,7 +936,7 @@
                     }
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "number": {
                     "type": "array",
@@ -971,7 +971,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "name": {
                     "type": "array",
@@ -991,7 +991,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "password": {
                     "type": "array",
@@ -1036,9 +1036,6 @@
                         "type": "integer"
                     }
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "number": {
                     "type": "array",
                     "items": {
@@ -1062,9 +1059,6 @@
                 "domen": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "password": {
                     "type": "array",
                     "items": {
@@ -1085,9 +1079,6 @@
                 "comment": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "text_data": {
                     "type": "array",
                     "items": {
@@ -1103,7 +1094,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "text_data": {
                     "type": "array",
@@ -1120,7 +1111,7 @@
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "name": {
                     "type": "array",

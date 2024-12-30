@@ -1,17 +1,27 @@
 package payloads
 
+import _ "passkeeper/internal/validators"
+
 // SavePassword представляет структуру для сохранения пароля, включая домен, имя пользователя, пароль и необязательный комментарий.
 type SavePassword struct {
-	ID       int64  `json:"id,omitempty"`
-	Domen    string `json:"domen"`
-	Username []byte `json:"username"`
-	Password []byte `json:"password"`
+	Domen    string `json:"domen" valid:"required,type(string)"`
+	Username []byte `json:"username" valid:"requireByteArray"`
+	Password []byte `json:"password" valid:"requireByteArray"`
 	Comment  string `json:"comment"`
+}
+
+// UpdatePassword представляет структуру для обновления пароля, включая домен, имя пользователя, пароль и необязательный комментарий.
+type UpdatePassword struct {
+	ID       string `json:"id,omitempty" valid:"required,uuidv4"`
+	Domen    string `json:"domen" valid:"required,type(string)"`
+	Username []byte `json:"username" valid:"requireByteArray"`
+	Password []byte `json:"password" valid:"requireByteArray"`
+	Comment  string `json:"comment" valid:"-"`
 }
 
 // Password представляет структуру записи пароля с полями идентификатора, домена, имени пользователя и пароля.
 type Password struct {
-	ID       int64  `json:"id"`
+	ID       string `json:"id"`
 	Domen    string `json:"domen"`
 	Username []byte `json:"username"`
 	Password []byte `json:"password"`

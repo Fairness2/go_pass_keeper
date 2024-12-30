@@ -96,7 +96,7 @@ func (m Form) updateText() (tea.Model, tea.Cmd) {
 		m.modelError = err
 		return m, m.getCmds()
 	}
-	if m.data.ID == 0 {
+	if m.data.ID == "" {
 		if err = m.pService.Create(m.data); err != nil {
 			m.modelError = err
 			return m, m.getCmds()
@@ -141,7 +141,7 @@ func (m *Form) updateInputs(msg tea.Msg) tea.Cmd {
 // View отображает форму на основе ее текущего состояния, включая входные данные, кнопки и ошибки, и возвращает визуализированную строку.
 func (m Form) View() string {
 	var b strings.Builder
-	if m.data.ID != 0 {
+	if m.data.ID != "" {
 		fmt.Fprintf(&b, "%s\n\n", headerUpdateText)
 	} else {
 		fmt.Fprintf(&b, "%s\n\n", headerNewText)

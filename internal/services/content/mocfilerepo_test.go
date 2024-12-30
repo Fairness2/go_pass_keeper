@@ -50,7 +50,7 @@ func (mr *MockfileRepositoryMockRecorder) Create(ctx, content, comment interface
 }
 
 // DeleteByUserIDAndID mocks base method.
-func (m *MockfileRepository) DeleteByUserIDAndID(ctx context.Context, userID, id int64) error {
+func (m *MockfileRepository) DeleteByUserIDAndID(ctx context.Context, userID int64, id string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteByUserIDAndID", ctx, userID, id)
 	ret0, _ := ret[0].(error)
@@ -79,7 +79,7 @@ func (mr *MockfileRepositoryMockRecorder) GetByUserID(ctx, userID interface{}) *
 }
 
 // GetByUserIDAndId mocks base method.
-func (m *MockfileRepository) GetByUserIDAndId(ctx context.Context, userID, id int64) (*models.FileContent, error) {
+func (m *MockfileRepository) GetByUserIDAndId(ctx context.Context, userID int64, id string) (*models.FileContent, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByUserIDAndId", ctx, userID, id)
 	ret0, _ := ret[0].(*models.FileContent)

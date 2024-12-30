@@ -112,10 +112,10 @@ func (s *CRUDService[T, Y]) Update(body T) error {
 }
 
 // Delete отправляет запрос DELETE на удаление ресурса по его идентификатору и возвращает ошибку, если операция не удалась.
-func (s *CRUDService[T, Y]) Delete(id int64) error {
+func (s *CRUDService[T, Y]) Delete(id string) error {
 	request := s.client.GetRequest()
 	request.SetAuthToken(s.client.GetToken())
-	response, err := request.Delete(fmt.Sprintf("%s/%d", s.url, id))
+	response, err := request.Delete(fmt.Sprintf("%s/%s", s.url, id))
 	if err != nil {
 		return errors.Join(ErrSendingRequest, err)
 	}

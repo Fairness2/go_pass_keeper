@@ -6,7 +6,7 @@ import (
 
 // FileContent представляет метаданные и важную информацию о файле, хранящемся в базе данных.
 type FileContent struct {
-	ID        int64     `db:"id"`
+	ID        string    `db:"id"`
 	UserID    int64     `db:"user_id"`
 	Name      []byte    `db:"name"`
 	FilePath  string    `db:"file_path"`
@@ -15,7 +15,7 @@ type FileContent struct {
 }
 
 // GetID возвращает идентификатор (ID) объекта FileContent.
-func (p FileContent) GetID() int64 {
+func (p FileContent) GetID() string {
 	return p.ID
 }
 

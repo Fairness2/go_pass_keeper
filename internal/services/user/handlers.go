@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/asaskevich/govalidator"
+	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
 	"passkeeper/internal/commonerrors"
 	"passkeeper/internal/config"
-	"passkeeper/internal/helpers"
 	"passkeeper/internal/models"
 	"passkeeper/internal/payloads"
 	"passkeeper/internal/repositories"
+	"passkeeper/internal/responsesetters"
 	"passkeeper/internal/token"
 	"time"
 )
@@ -39,7 +40,7 @@ type Handlers struct {
 }
 
 type HandlerConfig struct {
-	DBPool                 repositories.SQLExecutor
+	Repository             repository
 	JwtKeys                *config.Keys
 	TokenExpiration        time.Duration
 	RefreshTokenExpiration time.Duration
@@ -50,7 +51,7 @@ type HandlerConfig struct {
 // настроенный с указанным подключением к базе данных, ключами JWT, сроком действия токена и хэш-ключом.
 func NewHandlers(conf HandlerConfig) *Handlers {
 	return &Handlers{
-		repository:             repositories.NewUserRepository(conf.DBPool),
+		repository:             conf.Repository,
 		jwtKeys:                conf.JwtKeys,
 		tokenExpiration:        conf.TokenExpiration,
 		refreshTokenExpiration: conf.RefreshTokenExpiration,
@@ -73,9 +74,10 @@ func NewHandlers(conf HandlerConfig) *Handlers {
 //	@Router			/api/user/register [post]
 func (l *Handlers) RegistrationHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	body, err := l.getBody(request)
+	var body payloads.Register
+	err := l.getBody(request, &body)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 
@@ -83,21 +85,21 @@ func (l *Handlers) RegistrationHandler(response http.ResponseWriter, request *ht
 	// Проверим есть ли пользователь с таким логином
 	err = l.userExists(ctx, body.Login)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 
 	// Создаём и регистрируем пользователя
-	user, err := l.createAndSaveUser(ctx, body)
+	user, err := l.createAndSaveUser(ctx, &body)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
 
 	// Создаём токен для пользователя
 	payload, err := l.createTokens(user)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
 
@@ -108,12 +110,12 @@ func (l *Handlers) RegistrationHandler(response http.ResponseWriter, request *ht
 func (l *Handlers) setResponse(payload payloads.Authorization, response http.ResponseWriter) {
 	responseBody, err := json.Marshal(payload)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
 	response.Header().Set("Authorization", "Bearer "+payload.Token)
-	if rErr := helpers.SetHTTPResponse(response, http.StatusOK, responseBody); rErr != nil {
-		helpers.SetInternalError(err, response)
+	if rErr := responsesetters.SetHTTPResponse(response, http.StatusOK, responseBody); rErr != nil {
+		responsesetters.SetInternalError(err, response)
 	}
 }
 
@@ -136,36 +138,31 @@ func (l *Handlers) createTokens(user *models.User) (payloads.Authorization, erro
 }
 
 // getBody получаем тело для регистрации
-func (l *Handlers) getBody(request *http.Request) (*payloads.Register, error) {
+func (l *Handlers) getBody(request *http.Request, body any) error {
 	// Читаем тело запроса
 	rawBody, err := io.ReadAll(request.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// Парсим тело в структуру запроса
-	var body payloads.Register
-	err = json.Unmarshal(rawBody, &body)
+	err = json.Unmarshal(rawBody, body)
 	if err != nil {
-		return nil, &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
+		return &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
 	}
 
 	result, err := govalidator.ValidateStruct(body)
-	if err != nil {
-		return nil, err
-	}
-
 	if !result {
-		return nil, &commonerrors.RequestError{InternalError: ErrBadRequest, HTTPStatus: http.StatusBadRequest}
+		return &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
 	}
 
-	return &body, nil
+	return nil
 }
 
 // createUser создаём нового пользователя
-func (l *Handlers) createUser(body *payloads.Register) (*models.User, error) {
+func (l *Handlers) createUser(login, password string) (*models.User, error) {
 	user := &models.User{
-		Login:    body.Login,
-		Password: body.Password,
+		Login:    login,
+		Password: password,
 	}
 	err := user.GeneratePasswordHash(l.hashKey)
 	if err != nil {
@@ -176,7 +173,7 @@ func (l *Handlers) createUser(body *payloads.Register) (*models.User, error) {
 
 // createAndSaveUser создаём и сохраняем нового пользователя
 func (l *Handlers) createAndSaveUser(ctx context.Context, body *payloads.Register) (*models.User, error) {
-	user, err := l.createUser(body)
+	user, err := l.createUser(body.Login, body.Password)
 	if err != nil {
 		return nil, err
 	}
@@ -207,33 +204,34 @@ func (l *Handlers) createJWTToken(user *models.User, tokenType token.JWTType, ex
 //	@Router			/api/user/login [post]
 func (l *Handlers) LoginHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	body, err := l.getBody(request)
+	var body payloads.Login
+	err := l.getBody(request, &body)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
-	requestedUser, err := l.createUser(body)
+	requestedUser, err := l.createUser(body.Login, body.Password)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
 
 	dbUser, err := l.getUserByLogin(request.Context(), requestedUser.Login)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 
 	err = l.checkPassword(dbUser, requestedUser.PasswordHash)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 
 	// Создаём токен для пользователя
 	payload, err := l.createTokens(dbUser)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
 	l.setResponse(payload, response)
@@ -294,5 +292,14 @@ func (l *Handlers) userExists(ctx context.Context, login string) error {
 	return &commonerrors.RequestError{
 		InternalError: ErrUserAlreadyExists,
 		HTTPStatus:    http.StatusConflict,
+	}
+}
+
+// RegisterRoutes настраивает маршруты POST для регистрации и входа пользователей с дополнительной обработкой промежуточного программного обеспечения.
+func (l *Handlers) RegisterRoutes(middlewares ...func(http.Handler) http.Handler) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(middlewares...)
+		r.Post("/register", l.RegistrationHandler)
+		r.Post("/login", l.LoginHandler)
 	}
 }

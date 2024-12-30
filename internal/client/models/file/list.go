@@ -30,11 +30,11 @@ type processService interface {
 	DecryptItems(items []*payloads.FileWithComment) ([]service.FileData, error)
 	Create(body *payloads.FileWithComment) error
 	Update(body *payloads.FileWithComment) error
-	Delete(id int64) error
+	Delete(id string) error
 	EncryptFile(filePath string) (string, error)
 	DecryptFile(from io.Reader, dest io.Writer) error
 	CreateFile(body *payloads.FileWithComment, filePath string) error
-	DownloadFile(id int64, destFile string) error
+	DownloadFile(id string, destFile string) error
 }
 
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка файлов.

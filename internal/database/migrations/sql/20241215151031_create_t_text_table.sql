@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 create table public.t_text
 (
-    id         bigserial
+    id         uuid default gen_random_uuid()
         constraint t_text_pk
             primary key,
     user_id    bigint

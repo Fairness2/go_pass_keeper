@@ -942,7 +942,7 @@ const docTemplate = `{
                     }
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "number": {
                     "type": "array",
@@ -977,7 +977,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "name": {
                     "type": "array",
@@ -997,7 +997,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "password": {
                     "type": "array",
@@ -1042,9 +1042,6 @@ const docTemplate = `{
                         "type": "integer"
                     }
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "number": {
                     "type": "array",
                     "items": {
@@ -1068,9 +1065,6 @@ const docTemplate = `{
                 "domen": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "password": {
                     "type": "array",
                     "items": {
@@ -1091,9 +1085,6 @@ const docTemplate = `{
                 "comment": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "integer"
-                },
                 "text_data": {
                     "type": "array",
                     "items": {
@@ -1109,7 +1100,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "text_data": {
                     "type": "array",
@@ -1126,7 +1117,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "name": {
                     "type": "array",

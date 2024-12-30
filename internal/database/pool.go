@@ -4,6 +4,7 @@ import (
 	"errors"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
+	"passkeeper/internal/database/migrations"
 	"passkeeper/internal/logger"
 )
 
@@ -60,11 +61,11 @@ func NewDB(dsn string, maxConnections int, maxIdleConnections int) (*DBPool, err
 	return pool, nil
 }
 
-/*func (p *DBPool) Migrate() error {
+func (p *DBPool) Migrate() error {
 	logger.Log.Info("Migrate migrations")
 	// Применим миграции
 	return migrations.Migrate(p.DBx.DB)
-}*/
+}
 
 // Close закрытие базы данных
 func (p *DBPool) Close() {

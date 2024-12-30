@@ -105,7 +105,7 @@ func (m Form) updateFile() (tea.Model, tea.Cmd) {
 		m.modelError = err
 		return m, m.getCmds()
 	}
-	if m.data.ID == 0 {
+	if m.data.ID == "" {
 		encFilePath, err := m.pService.EncryptFile(m.inputs[filePathI].Value())
 		if err != nil {
 			m.modelError = err
@@ -157,7 +157,7 @@ func (m *Form) updateInputs(msg tea.Msg) tea.Cmd {
 func (m Form) View() string {
 	var b strings.Builder
 	start := filePathI
-	if m.data.ID != 0 {
+	if m.data.ID != "" {
 		fmt.Fprintf(&b, "%s\n\n", headerUpdateText)
 		start = nameI
 	} else {

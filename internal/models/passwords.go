@@ -6,7 +6,7 @@ import (
 
 // PasswordContent представляет данные пароля пользователя, включая связанные метаданные, такие как домен, имя пользователя и временные метки.
 type PasswordContent struct {
-	ID        int64     `db:"id"`
+	ID        string    `db:"id"`
 	UserID    int64     `db:"user_id"`
 	Domen     string    `db:"domen"`
 	Username  []byte    `db:"username"`
@@ -16,7 +16,7 @@ type PasswordContent struct {
 }
 
 // GetID возвращает уникальный идентификатор (ID) экземпляра PasswordContent.
-func (p PasswordContent) GetID() int64 {
+func (p PasswordContent) GetID() string {
 	return p.ID
 }
 

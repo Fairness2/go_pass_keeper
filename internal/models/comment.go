@@ -14,9 +14,9 @@ type ContentType = int8
 
 // Comment представляет комментарий, связанный с определенным типом контента и идентификатором контента в системе.
 type Comment struct {
-	ID          int64       `db:"id"`
+	ID          string      `db:"id"`
 	ContentType ContentType `db:"content_type"`
-	ContentID   int64       `db:"content_id"`
+	ContentID   string      `db:"content_id"`
 	Comment     string      `db:"comment"`
 	CreatedAt   time.Time   `db:"created_at"`
 	UpdatedAt   time.Time   `db:"updated_at"`

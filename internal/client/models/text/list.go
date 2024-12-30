@@ -24,7 +24,7 @@ type processService interface {
 	DecryptItems(items []*payloads.TextWithComment) ([]service.TextData, error)
 	Create(body *payloads.TextWithComment) error
 	Update(body *payloads.TextWithComment) error
-	Delete(id int64) error
+	Delete(id string) error
 }
 
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка паролей.

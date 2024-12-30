@@ -1,15 +1,23 @@
 package payloads
 
-// SaveText представляет собой структуру для получения текстовых данных с необязательным комментарием и идентификатором.
+import _ "passkeeper/internal/validators"
+
+// SaveText представляет собой структуру для сохранения текстовых данных с необязательным комментарием и идентификатором.
 type SaveText struct {
-	ID       int64  `json:"id,omitempty"`
-	TextData []byte `json:"text_data"`
-	Comment  string `json:"comment"`
+	TextData []byte `json:"text_data" valid:"requireByteArray"`
+	Comment  string `json:"comment" valid:"type(string)"`
+}
+
+// UpdateText представляет собой структуру для обновления текстовых данных с необязательным комментарием и идентификатором.
+type UpdateText struct {
+	ID       string `json:"id,omitempty" valid:"required,uuidv4"`
+	TextData []byte `json:"text_data" valid:"requireByteArray"`
+	Comment  string `json:"comment" valid:"type(string)"`
 }
 
 // Text представляет текстовый объект с идентификатором и двоичными текстовыми данными.
 type Text struct {
-	ID       int64  `json:"id"`
+	ID       string `json:"id"`
 	TextData []byte `json:"text_data"`
 }
 

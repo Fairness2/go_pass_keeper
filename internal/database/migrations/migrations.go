@@ -1,6 +1,12 @@
 package migrations
 
-/*//go:embed sql/*.sql
+import (
+	"database/sql"
+	"embed"
+	"github.com/pressly/goose/v3"
+)
+
+//go:embed sql/*.sql
 var embedMigrations embed.FS
 
 // Migrate применяет миграцию базы данных с использованием встроенных файлов миграции и диалекта PostgreSQL.
@@ -13,4 +19,4 @@ func Migrate(db *sql.DB) error {
 	}
 
 	return goose.Up(db, "sql")
-}*/
+}

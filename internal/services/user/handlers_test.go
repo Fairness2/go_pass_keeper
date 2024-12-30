@@ -310,7 +310,7 @@ func TestCreateUser(t *testing.T) {
 			}
 
 			// Act
-			user, err := handlers.createUser(tt.input)
+			user, err := handlers.createUser(tt.input.Login, tt.input.Password)
 
 			// Assert
 			if tt.expectErr {
@@ -456,14 +456,15 @@ func TestGetBody(t *testing.T) {
 			handlers := &Handlers{}
 
 			// Act
-			result, err := handlers.getBody(req)
+			var result payloads.Register
+			err := handlers.getBody(req, &result)
 
 			// Assert
 			if tt.expectedError {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedBody, result)
+				assert.Equal(t, tt.expectedBody, &result)
 			}
 		})
 	}
@@ -885,7 +886,7 @@ func TestNewHandlers(t *testing.T) {
 			name:          "successful_initialization",
 			expectedError: false,
 			getConf: func() HandlerConfig {
-				return HandlerConfig{DBPool: NewMockSQLExecutor(ctr)}
+				return HandlerConfig{Repository: NewMockrepository(ctr)}
 			},
 		},
 	}
@@ -894,6 +895,47 @@ func TestNewHandlers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			service := NewHandlers(tt.getConf())
 			assert.NotNil(t, service, "NewTextService should not return nil")
+		})
+	}
+}
+
+func TestRegisterRoutes(t *testing.T) {
+	tests := []struct {
+		name           string
+		middleware     func(http.Handler) http.Handler
+		expectedRoutes map[string]string
+	}{
+		{
+			name:           "routes_without_middleware",
+			middleware:     nil,
+			expectedRoutes: map[string]string{"/register": http.MethodPost, "/login": http.MethodPost},
+		},
+		{
+			name: "routes_with_middleware",
+			middleware: func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("X-Test-Middleware", "Active")
+					next.ServeHTTP(w, r)
+				})
+			},
+			expectedRoutes: map[string]string{"/register": http.MethodPost, "/login": http.MethodPost},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			handlers := &Handlers{}
+			router := chi.NewRouter()
+			if tt.middleware != nil {
+				router.Group(handlers.RegisterRoutes(tt.middleware))
+			} else {
+				router.Group(handlers.RegisterRoutes())
+			}
+			for route, method := range tt.expectedRoutes {
+				res := router.Match(chi.NewRouteContext(), method, route)
+				assert.True(t, res)
+			}
 		})
 	}
 }

@@ -4,26 +4,30 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/asaskevich/govalidator"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
 	"passkeeper/internal/commonerrors"
-	"passkeeper/internal/helpers"
 	"passkeeper/internal/logger"
 	"passkeeper/internal/models"
 	"passkeeper/internal/payloads"
 	"passkeeper/internal/repositories"
+	"passkeeper/internal/responsesetters"
 	"passkeeper/internal/token"
-	"strconv"
 	"time"
+)
+
+var (
+	ErrBadRequest = errors.New("bad request")
 )
 
 // passwordRepository определяет интерфейс для управления паролями пользователей и соответствующими комментариями в системе.
 type passwordRepository interface {
 	Create(ctx context.Context, content models.PasswordContent, comment models.Comment) error
-	GetByUserIDAndId(ctx context.Context, userID int64, id int64) (*models.PasswordContent, error)
+	GetByUserIDAndId(ctx context.Context, userID int64, id string) (*models.PasswordContent, error)
 	GetByUserID(ctx context.Context, userID int64) ([]models.PasswordWithComment, error)
-	DeleteByUserIDAndID(ctx context.Context, userID int64, id int64) error
+	DeleteByUserIDAndID(ctx context.Context, userID int64, id string) error
 }
 
 // PasswordService предоставляет методы для управления паролями пользователей и соответствующими комментариями в системе.
@@ -32,9 +36,9 @@ type PasswordService struct {
 }
 
 // NewPasswordService инициализирует и возвращает новый экземпляр PasswordService, настроенный с использованием предоставленной базой.
-func NewPasswordService(dbPool repositories.SQLExecutor) *PasswordService {
+func NewPasswordService(rep passwordRepository) *PasswordService {
 	return &PasswordService{
-		repository: repositories.NewPasswordRepository(dbPool),
+		repository: rep,
 	}
 }
 
@@ -57,19 +61,14 @@ func (s *PasswordService) SavePasswordHandler(response http.ResponseWriter, requ
 	var body payloads.SavePassword
 	err := getSaveBody(request, &body)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
-		return
-	}
-	// Для создания нельзя передавать идентификатор
-	if body.ID != 0 {
-		helpers.ProcessResponseWithStatus("ID should be empty", http.StatusBadRequest, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	pass := models.PasswordContent{
@@ -83,13 +82,12 @@ func (s *PasswordService) SavePasswordHandler(response http.ResponseWriter, requ
 		Comment:     body.Comment,
 	}
 	if err = s.repository.Create(request.Context(), pass, comment); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
 
 // getSaveBody анализирует и проверяет тело HTTP-запроса для извлечения полезных данных SavePassword или возвращает ошибку.
 func getSaveBody(request *http.Request, body any) error {
-	// TODO валидация
 	// Читаем тело запроса
 	rawBody, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -98,6 +96,11 @@ func getSaveBody(request *http.Request, body any) error {
 	// Парсим тело в структуру запроса
 	err = json.Unmarshal(rawBody, body)
 	if err != nil {
+		return &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
+	}
+
+	result, err := govalidator.ValidateStruct(body)
+	if !result {
 		return &commonerrors.RequestError{InternalError: err, HTTPStatus: http.StatusBadRequest}
 	}
 
@@ -121,21 +124,21 @@ func getSaveBody(request *http.Request, body any) error {
 //	@Router			/api/content/password [put]
 func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, request *http.Request) {
 	// Читаем тело запроса
-	var body payloads.SavePassword
+	var body payloads.UpdatePassword
 	err := getSaveBody(request, &body)
 	if err != nil {
-		helpers.ProcessRequestErrorWithBody(err, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 	// Для создания нельзя передавать идентификатор
-	if body.ID <= 0 {
-		helpers.ProcessResponseWithStatus("ID should not be empty", http.StatusBadRequest, response)
+	if body.ID == "" {
+		responsesetters.ProcessResponseWithStatus("ID should not be empty", http.StatusBadRequest, response)
 		return
 	}
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	pass := models.PasswordContent{
@@ -157,16 +160,16 @@ func (s *PasswordService) UpdatePasswordHandler(response http.ResponseWriter, re
 	_, err = s.repository.GetByUserIDAndId(ctx, pass.UserID, pass.ID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrNotExist) {
-			helpers.ProcessResponseWithStatus("Password not found", http.StatusNotFound, response)
+			responsesetters.ProcessResponseWithStatus("Password not found", http.StatusNotFound, response)
 			return
 		} else {
-			helpers.SetInternalError(err, response)
+			responsesetters.SetInternalError(err, response)
 			return
 		}
 	}
 	// Обновляем пароль
 	if err = s.repository.Create(ctx, pass, comment); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t save", http.StatusInternalServerError, response)
 	}
 }
 
@@ -186,12 +189,12 @@ func (s *PasswordService) GetUserPasswords(response http.ResponseWriter, request
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
 	passwords, err := s.repository.GetByUserID(request.Context(), user.ID)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
 	passwordsData := make([]payloads.PasswordWithComment, 0, len(passwords))
@@ -208,10 +211,10 @@ func (s *PasswordService) GetUserPasswords(response http.ResponseWriter, request
 	}
 	marshaledBody, err := json.Marshal(passwordsData)
 	if err != nil {
-		helpers.SetInternalError(err, response)
+		responsesetters.SetInternalError(err, response)
 		return
 	}
-	if err = helpers.SetHTTPResponse(response, http.StatusOK, marshaledBody); err != nil {
+	if err = responsesetters.SetHTTPResponse(response, http.StatusOK, marshaledBody); err != nil {
 		logger.Log.Error(err)
 	}
 }
@@ -233,17 +236,27 @@ func (s *PasswordService) DeleteUserPasswords(response http.ResponseWriter, requ
 	// Берём авторизованного пользователя
 	user, ok := request.Context().Value(token.UserKey).(*models.User)
 	if !ok {
-		helpers.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
+		responsesetters.ProcessResponseWithStatus("User not found", http.StatusUnauthorized, response)
 		return
 	}
-	strID := chi.URLParam(request, "id")
-	id, err := strconv.ParseInt(strID, 10, 64)
+	id, err := getIDFromRequest(request)
 	if err != nil {
-		helpers.ProcessResponseWithStatus("Password ID is not correct", http.StatusBadRequest, response)
+		responsesetters.ProcessRequestErrorWithBody(err, response)
 		return
 	}
 	if err = s.repository.DeleteByUserIDAndID(request.Context(), user.ID, id); err != nil {
-		helpers.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
+		responsesetters.ProcessResponseWithStatus("Can`t delete", http.StatusInternalServerError, response)
 		return
+	}
+}
+
+// RegisterRoutes настраивает HTTP-маршруты для PasswordService, применяя предоставленное промежуточное программное обеспечение для обработки паролей.
+func (s *PasswordService) RegisterRoutes(middlewares ...func(http.Handler) http.Handler) func(r chi.Router) {
+	return func(r chi.Router) {
+		r.Use(middlewares...)
+		r.Post("/password", s.SavePasswordHandler)
+		r.Put("/password", s.UpdatePasswordHandler)
+		r.Get("/password", s.GetUserPasswords)
+		r.Delete("/password/{id}", s.DeleteUserPasswords)
 	}
 }

@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"passkeeper/internal/commonerrors"
 	"passkeeper/internal/config"
-	"passkeeper/internal/helpers"
 	"passkeeper/internal/logger"
 	"passkeeper/internal/models"
 	"passkeeper/internal/repositories"
+	"passkeeper/internal/responsesetters"
 	"strconv"
 	"strings"
 	"time"
@@ -71,26 +71,26 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 		// Получаем токен
 		tknString, err := a.getToken(r)
 		if err != nil {
-			helpers.ProcessRequestErrorWithBody(err, w)
+			responsesetters.ProcessRequestErrorWithBody(err, w)
 			return
 		}
 		// Парсим токен
 		tkn, err := a.generator.Parse(tknString)
 		if err != nil {
 			logger.Log.Info(err)
-			helpers.ProcessResponseWithStatus("token is not valid", http.StatusUnauthorized, w)
+			responsesetters.ProcessResponseWithStatus("token is not valid", http.StatusUnauthorized, w)
 			return
 		}
 		// Получаем идентификатор пользователя из токена
 		userID, err := a.getUserIdFromToken(tkn)
 		if err != nil {
-			helpers.ProcessRequestErrorWithBody(err, w)
+			responsesetters.ProcessRequestErrorWithBody(err, w)
 			return
 		}
 		// Получаем пользователя
 		user, err := a.getUserById(r.Context(), userID)
 		if err != nil {
-			helpers.ProcessRequestErrorWithBody(err, w)
+			responsesetters.ProcessRequestErrorWithBody(err, w)
 			return
 		}
 

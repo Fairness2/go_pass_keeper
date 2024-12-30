@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 create table public.t_card
 (
-    id      bigserial
+    id      uuid default gen_random_uuid()
         constraint t_card_pk
             primary key,
     number  bytea,

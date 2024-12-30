@@ -1,9 +1,20 @@
 package payloads
 
+import _ "passkeeper/internal/validators"
+
 // SaveCard представляет сохраненные данные карты вместе с комментариями пользователя.
 type SaveCard struct {
-	ID      int64  `json:"id,omitempty"`
-	Number  []byte `json:"number"`
+	Number  []byte `json:"number" valid:"requireByteArray"`
+	Date    []byte `json:"date"`
+	Owner   []byte `json:"owner"`
+	CVV     []byte `json:"cvv"`
+	Comment string `json:"comment"`
+}
+
+// UpdateCard представляет обновление данные карты вместе с комментариями пользователя.
+type UpdateCard struct {
+	ID      string `json:"id" valid:"required,uuidv4"`
+	Number  []byte `json:"number" valid:"requireByteArray"`
 	Date    []byte `json:"date"`
 	Owner   []byte `json:"owner"`
 	CVV     []byte `json:"cvv"`
@@ -12,7 +23,7 @@ type SaveCard struct {
 
 // Card представляет собой карту пользователя с минимальной конфиденциальной информацией, необходимой для безопасной обработки.
 type Card struct {
-	ID     int64  `json:"id"`
+	ID     string `json:"id"`
 	Number []byte `json:"number"`
 	Date   []byte `json:"date"`
 	Owner  []byte `json:"owner"`

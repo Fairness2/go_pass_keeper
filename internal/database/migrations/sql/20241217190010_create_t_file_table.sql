@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 create table public.t_file
 (
-    id         bigserial
+    id         uuid default gen_random_uuid()
         constraint t_file_pk
             primary key,
     name       bytea,
