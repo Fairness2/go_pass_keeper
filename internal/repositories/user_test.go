@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/golang/mock/gomock"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"passkeeper/internal/models"
 	"testing"
@@ -39,6 +41,11 @@ func TestNewUserRepository(t *testing.T) {
 }
 
 func TestUserExists(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pool, cancelContainer := createTestcontainer(ctx, t)
+	defer cancelContainer()
+
 	ctr := gomock.NewController(t)
 	defer ctr.Finish()
 	dbErr := errors.New("mock DB error")
@@ -48,6 +55,18 @@ func TestUserExists(t *testing.T) {
 		setupMock func() SQLExecutor
 		expectErr error
 	}{
+		{
+			name:  "user_exists_with_real_db",
+			login: "existing_user",
+			setupMock: func() SQLExecutor {
+				dbAdapter := NewDBAdapter(pool.DBx)
+				if _, err := pool.DBx.Exec("INSERT INTO t_user (login, password_hash) VALUES ($1, $2)", "existing_user", "df177f12d2e5b2977526db9b06be7f40fc41a9310f260b3d28851fb689c1da18"); err != nil {
+					t.Fatal(err)
+				}
+				return dbAdapter
+			},
+			expectErr: nil,
+		},
 		{
 			name:  "user_exists",
 			login: "existing_user",
@@ -60,6 +79,15 @@ func TestUserExists(t *testing.T) {
 				return mockDB
 			},
 			expectErr: nil,
+		},
+		{
+			name:  "user_does_not_exist_with_real_db",
+			login: "non_existent_user",
+			setupMock: func() SQLExecutor {
+				dbAdapter := NewDBAdapter(pool.DBx)
+				return dbAdapter
+			},
+			expectErr: ErrNotExist,
 		},
 		{
 			name:  "user_does_not_exist",
@@ -99,6 +127,11 @@ func TestUserExists(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pool, cancelContainer := createTestcontainer(ctx, t)
+	defer cancelContainer()
+
 	ctr := gomock.NewController(t)
 	defer ctr.Finish()
 	dbErr := errors.New("mock DB error")
@@ -106,8 +139,35 @@ func TestCreateUser(t *testing.T) {
 		name      string
 		user      *models.User
 		setupMock func() SQLExecutor
-		expectErr error
+		expectErr func(err error)
 	}{
+		{
+			name: "successful_creation_with_real_db",
+			user: &models.User{Login: "new_user", Password: "hashed_password"},
+			setupMock: func() SQLExecutor {
+				dbAdapter := NewDBAdapter(pool.DBx)
+				return dbAdapter
+			},
+			expectErr: func(err error) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			name: "already_exisiting_user_with_real_db",
+			user: &models.User{Login: "existing_user", Password: "hashed_password"},
+			setupMock: func() SQLExecutor {
+				dbAdapter := NewDBAdapter(pool.DBx)
+				if _, err := pool.DBx.Exec("INSERT INTO t_user (login, password_hash) VALUES ($1, $2)", "existing_user", "df177f12d2e5b2977526db9b06be7f40fc41a9310f260b3d28851fb689c1da18"); err != nil {
+					t.Fatal(err)
+				}
+				return dbAdapter
+			},
+			expectErr: func(err error) {
+				var pgErr *pgconn.PgError
+				assert.ErrorAs(t, err, &pgErr)
+				assert.True(t, errors.As(err, &pgErr) && pgerrcode.UniqueViolation == pgErr.Code)
+			},
+		},
 		{
 			name: "successful_creation",
 			user: &models.User{Login: "new_user", Password: "hashed_password"},
@@ -125,7 +185,9 @@ func TestCreateUser(t *testing.T) {
 
 				return mockDB
 			},
-			expectErr: nil,
+			expectErr: func(err error) {
+				assert.NoError(t, err)
+			},
 		},
 		{
 			name: "prepare_failed",
@@ -135,7 +197,9 @@ func TestCreateUser(t *testing.T) {
 				mockDB.EXPECT().PrepareNamed(createUserSQL).Return(nil, dbErr).Times(1)
 				return mockDB
 			},
-			expectErr: dbErr,
+			expectErr: func(err error) {
+				assert.ErrorIs(t, err, dbErr)
+			},
 		},
 		{
 			name: "query_row_error",
@@ -150,7 +214,9 @@ func TestCreateUser(t *testing.T) {
 				mockRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows).Times(1)
 				return mockDB
 			},
-			expectErr: sql.ErrNoRows,
+			expectErr: func(err error) {
+				assert.ErrorIs(t, err, sql.ErrNoRows)
+			},
 		},
 	}
 
@@ -158,7 +224,7 @@ func TestCreateUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := &UserRepository{db: tt.setupMock()}
 			err := repo.CreateUser(context.TODO(), tt.user)
-			assert.ErrorIs(t, err, tt.expectErr)
+			tt.expectErr(err)
 			if err == nil {
 				assert.NotZero(t, tt.user.ID)
 			}
@@ -167,6 +233,11 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestGetUserByLogin(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pool, cancelContainer := createTestcontainer(ctx, t)
+	defer cancelContainer()
+
 	ctr := gomock.NewController(t)
 	defer ctr.Finish()
 	dbErr := errors.New("mock DB error")
@@ -177,6 +248,23 @@ func TestGetUserByLogin(t *testing.T) {
 		expectErr  error
 		expectUser *models.User
 	}{
+		{
+			name:  "user_exists_with_real_db",
+			login: "existing_user",
+			setupMock: func() SQLExecutor {
+				dbAdapter := NewDBAdapter(pool.DBx)
+				if _, err := pool.DBx.Exec("INSERT INTO t_user (login, password_hash) VALUES ($1, $2)", "existing_user", "df177f12d2e5b2977526db9b06be7f40fc41a9310f260b3d28851fb689c1da18"); err != nil {
+					t.Fatal(err)
+				}
+				return dbAdapter
+			},
+			expectErr: nil,
+			expectUser: &models.User{
+				ID:           1,
+				Login:        "existing_user",
+				PasswordHash: "df177f12d2e5b2977526db9b06be7f40fc41a9310f260b3d28851fb689c1da18",
+			},
+		},
 		{
 			name:  "user_exists",
 			login: "existing_user",
@@ -201,6 +289,16 @@ func TestGetUserByLogin(t *testing.T) {
 				Login:        "existing_user",
 				PasswordHash: "hashed_password",
 			},
+		},
+		{
+			name:  "user_does_not_exist_with_real_db",
+			login: "non_existent_user",
+			setupMock: func() SQLExecutor {
+				dbAdapter := NewDBAdapter(pool.DBx)
+				return dbAdapter
+			},
+			expectErr:  ErrNotExist,
+			expectUser: nil,
 		},
 		{
 			name:  "user_does_not_exist",
@@ -243,6 +341,11 @@ func TestGetUserByLogin(t *testing.T) {
 }
 
 func TestGetUserByID(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	pool, cancelContainer := createTestcontainer(ctx, t)
+	defer cancelContainer()
+
 	ctr := gomock.NewController(t)
 	defer ctr.Finish()
 	dbErr := errors.New("mock DB error")
@@ -253,6 +356,23 @@ func TestGetUserByID(t *testing.T) {
 		expectErr  error
 		expectUser *models.User
 	}{
+		{
+			name: "user_exists_with_real_db",
+			id:   1,
+			setupMock: func() SQLExecutor {
+				dbAdapter := NewDBAdapter(pool.DBx)
+				if _, err := pool.DBx.Exec("INSERT INTO t_user (id, login, password_hash) VALUES ($1, $2, $3)", 1, "existing_user", "df177f12d2e5b2977526db9b06be7f40fc41a9310f260b3d28851fb689c1da18"); err != nil {
+					t.Fatal(err)
+				}
+				return dbAdapter
+			},
+			expectErr: nil,
+			expectUser: &models.User{
+				ID:           1,
+				Login:        "existing_user",
+				PasswordHash: "df177f12d2e5b2977526db9b06be7f40fc41a9310f260b3d28851fb689c1da18",
+			},
+		},
 		{
 			name: "user_exists",
 			id:   1,
@@ -277,6 +397,16 @@ func TestGetUserByID(t *testing.T) {
 				Login:        "existing_user",
 				PasswordHash: "hashed_password",
 			},
+		},
+		{
+			name: "user_does_not_exist_with_real_db",
+			id:   999,
+			setupMock: func() SQLExecutor {
+				dbAdapter := NewDBAdapter(pool.DBx)
+				return dbAdapter
+			},
+			expectErr:  ErrNotExist,
+			expectUser: nil,
 		},
 		{
 			name: "user_does_not_exist",
