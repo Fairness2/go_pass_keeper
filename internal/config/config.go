@@ -40,9 +40,9 @@ type Keys struct {
 
 // CliConfig конфигурация сервера из командной строки
 type CliConfig struct {
-	Address         string        `env:"RUN_ADDRESS"`      // адрес сервера
+	Address         string        `env:"RUN_ADDRESS"`      // Адрес сервера
 	LogLevel        string        `env:"LOG_LEVEL"`        // Уровень логирования
-	DatabaseDSN     string        `env:"DATABASE_URI"`     // подключение к базе данных
+	DatabaseDSN     string        `env:"DATABASE_URI"`     // Подключение к базе данных
 	HashKey         string        `env:"KEY"`              // Ключ для шифрования
 	PrivateJWTKey   string        `env:"JPKEY"`            // Приватный ключ для JWT
 	PublicJWTKey    string        `env:"JPUKEY"`           // Публичный ключ для JWT
