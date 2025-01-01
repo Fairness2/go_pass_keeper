@@ -1,6 +1,7 @@
 package service
 
 import (
+	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/payloads"
 )
@@ -32,4 +33,8 @@ func NewCRUDPasswordService(client crudClient, user *user.User) *CRUDService[*pa
 			}
 		},
 	}
+}
+
+func NewDefaultPasswordService() *CRUDService[*payloads.PasswordWithComment, PassData] {
+	return NewCRUDPasswordService(serverclient.Inst, user.CurrentUser)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/payloads"
 )
@@ -57,6 +58,10 @@ func NewFileService(client crudClient, user *user.User) *FileService {
 			},
 		},
 	}
+}
+
+func NewDefaultFileService() *FileService {
+	return NewFileService(serverclient.Inst, user.CurrentUser)
 }
 
 // EncryptFile шифрует содержимое файла по заданному пути к файлу и создает временный зашифрованный файл.

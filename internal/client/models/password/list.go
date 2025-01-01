@@ -6,31 +6,36 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"passkeeper/internal/client/models"
 	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
 	"passkeeper/internal/payloads"
-	"strings"
+)
+
+const (
+	selectedTemplate = "%s\n\nЛогин: %s\nПароль: %s\nДомен: %s\nКомментарий: %s\n\n%s"
+	header           = "Список паролей"
+	selectedHeader   = "Пароль"
+	newText          = "Новый пароль"
+	updateText       = "Обновить пароль"
+	deleteText       = "Удалить пароль"
 )
 
 var (
-	headerText         = style.HeaderStyle.Render("Список паролей")
-	selectedHeaderText = style.HeaderStyle.Render("Пароль")
+	headerText         = style.HeaderStyle.Render(header)
+	selectedHeaderText = style.HeaderStyle.Render(selectedHeader)
 )
 
-// processService определяет интерфейс для управления данными пароля, включая операции извлечения, шифрования, расшифровки, создания, обновления и удаления.
-type processService interface {
+// iListService определяет интерфейс для управления данными пароля, включая операции извлечения, шифрования, расшифровки, создания, обновления и удаления.
+type iListService interface {
 	Get() ([]service.PassData, error)
-	EncryptItem(body *payloads.PasswordWithComment) (*payloads.PasswordWithComment, error)
-	DecryptItems(items []*payloads.PasswordWithComment) ([]service.PassData, error)
-	Create(body *payloads.PasswordWithComment) error
-	Update(body *payloads.PasswordWithComment) error
 	Delete(id string) error
 }
 
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка паролей.
 type List struct {
 	list       list.Model
-	pService   processService
+	pService   iListService
 	modelError error
 	selected   *service.PassData
 	help       help.Model
@@ -39,21 +44,21 @@ type List struct {
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.PasswordService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(passwordService processService) List {
+func NewList(passwordService iListService) List {
 	m := List{
 		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
 		pService: passwordService,
 		help:     help.New(),
 		helpKeys: []key.Binding{
-			key.NewBinding(key.WithHelp("esc, backspace", "Выход"), key.WithKeys("backspace", "esc")),
+			key.NewBinding(key.WithHelp("esc, backspace", models.EscapeText), key.WithKeys("backspace", "esc")),
 		},
 	}
 	m.list.SetShowTitle(false)
 	m.list.AdditionalShortHelpKeys = func() []key.Binding {
 		binds := make([]key.Binding, 3)
-		binds[0] = key.NewBinding(key.WithHelp("n", "Новый пароль"), key.WithKeys("n"))
-		binds[1] = key.NewBinding(key.WithHelp("u", "Обновить пароль"), key.WithKeys("u"))
-		binds[2] = key.NewBinding(key.WithHelp("d", "Удалить пароль"), key.WithKeys("d"))
+		binds[0] = key.NewBinding(key.WithHelp("n", newText), key.WithKeys("n"))
+		binds[1] = key.NewBinding(key.WithHelp("u", updateText), key.WithKeys("u"))
+		binds[2] = key.NewBinding(key.WithHelp("d", deleteText), key.WithKeys("d"))
 		return binds
 	}
 
@@ -113,7 +118,7 @@ func (m List) selectItem() (tea.Model, tea.Cmd) {
 // newPassword переключает модель на форму создания нового пароля и инициализирует форму значениями по умолчанию.
 func (m List) newPassword() (tea.Model, tea.Cmd) {
 	n := &payloads.PasswordWithComment{}
-	newForm := InitialForm(m.pService, n)
+	newForm := InitialForm(service.NewDefaultPasswordService(), n)
 	return newForm, newForm.Init()
 }
 
@@ -121,7 +126,7 @@ func (m List) newPassword() (tea.Model, tea.Cmd) {
 func (m List) updatePassword() (tea.Model, tea.Cmd) {
 	selected := m.list.SelectedItem().(service.PassData)
 	selectedData := &selected.PasswordWithComment
-	newForm := InitialForm(m.pService, selectedData)
+	newForm := InitialForm(service.NewDefaultPasswordService(), selectedData)
 	return newForm, newForm.Init()
 }
 
@@ -160,14 +165,16 @@ func (m List) View() string {
 	if m.selected != nil {
 		return m.renderSelected()
 	}
-	var b strings.Builder
-	b.WriteString(headerText)
-	//b.WriteString("\n")
+	return m.renderList()
+}
+
+// renderList генерирует форматированное строковое представление списка, включая сообщение об ошибке, если оно существует.
+func (m List) renderList() string {
+	errorStr := ""
 	if m.modelError != nil {
-		fmt.Fprintf(&b, "\n%s\n", style.ErrorStyle.Render(m.modelError.Error()))
+		errorStr = style.ErrorStyle.Render(m.modelError.Error())
 	}
-	b.WriteString(m.list.View())
-	return b.String()
+	return fmt.Sprintf(models.ListTemplate, headerText, errorStr, m.list.View())
 }
 
 // refresh обновить обновляет список, получая пароли из PasswordService и устанавливая их как элементы списка.
@@ -186,16 +193,11 @@ func (l *List) refresh() error {
 
 // renderSelected генерирует и возвращает форматированное строковое представление выбранного пароля и его сведений.
 func (l List) renderSelected() string {
-	var b strings.Builder
-	b.WriteString(selectedHeaderText)
-	b.WriteString("\n")
-	fmt.Fprintf(&b,
-		"\nЛогин: %s\nПароль: %s\nДомен: %s\nКомментарий: %s\n",
+	return fmt.Sprintf(selectedTemplate,
+		selectedHeaderText,
 		style.FocusedStyle.Render(string(l.selected.Username)),
 		style.FocusedStyle.Render(string(l.selected.Password.Password)),
 		style.FocusedStyle.Render(l.selected.Domen),
-		l.selected.Comment)
-	b.WriteString("\n")
-	b.WriteString(l.help.ShortHelpView(l.helpKeys))
-	return b.String()
+		l.selected.Comment,
+		l.help.ShortHelpView(l.helpKeys))
 }

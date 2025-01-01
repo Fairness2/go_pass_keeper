@@ -7,32 +7,37 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"passkeeper/internal/client/models"
 	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
 	"passkeeper/internal/payloads"
-	"strings"
+)
+
+const (
+	selectedTemplate = "%s\n\nНомер: %s\nДата: %s\nДержатель: %s\nCVV: %s\nКомментарий: %s\n\n%s"
+	header           = "Список карт"
+	selectedHeader   = "Карта"
+	newText          = "Новая карта"
+	updateText       = "Обновить карту"
+	deleteText       = "Удалить карту"
 )
 
 var (
 	docStyle           = lipgloss.NewStyle()
-	headerText         = style.HeaderStyle.Render("Список карт")
-	selectedHeaderText = style.HeaderStyle.Render("Карта")
+	headerText         = style.HeaderStyle.Render(header)
+	selectedHeaderText = style.HeaderStyle.Render(selectedHeader)
 )
 
-// processService определяет интерфейс для обработки операций с данными карты, включая операции шифрования, дешифрования и CRUD.
-type processService interface {
+// iListService определяет интерфейс для обработки операций с данными карты, включая операции шифрования, дешифрования и CRUD.
+type iListService interface {
 	Get() ([]service.CardData, error)
-	EncryptItem(body *payloads.CardWithComment) (*payloads.CardWithComment, error)
-	DecryptItems(items []*payloads.CardWithComment) ([]service.CardData, error)
-	Create(body *payloads.CardWithComment) error
-	Update(body *payloads.CardWithComment) error
 	Delete(id string) error
 }
 
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка карт.
 type List struct {
 	list       list.Model
-	pService   processService
+	pService   iListService
 	modelError error
 	selected   *service.CardData
 	help       help.Model
@@ -41,21 +46,21 @@ type List struct {
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.CardService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(cardService processService) List {
+func NewList(cardService iListService) List {
 	m := List{
 		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
 		pService: cardService,
 		help:     help.New(),
 		helpKeys: []key.Binding{
-			key.NewBinding(key.WithHelp("esc, backspace", "Выход"), key.WithKeys("backspace", "esc")),
+			key.NewBinding(key.WithHelp("esc, backspace", models.EscapeText), key.WithKeys("backspace", "esc")),
 		},
 	}
 	m.list.SetShowTitle(false)
 	m.list.AdditionalShortHelpKeys = func() []key.Binding {
 		binds := make([]key.Binding, 3)
-		binds[0] = key.NewBinding(key.WithHelp("n", "Новая карта"), key.WithKeys("n"))
-		binds[1] = key.NewBinding(key.WithHelp("u", "Обновить карту"), key.WithKeys("u"))
-		binds[2] = key.NewBinding(key.WithHelp("d", "Удалить карту"), key.WithKeys("d"))
+		binds[0] = key.NewBinding(key.WithHelp("n", newText), key.WithKeys("n"))
+		binds[1] = key.NewBinding(key.WithHelp("u", updateText), key.WithKeys("u"))
+		binds[2] = key.NewBinding(key.WithHelp("d", deleteText), key.WithKeys("d"))
 		return binds
 	}
 
@@ -115,7 +120,7 @@ func (m List) selectItem() (tea.Model, tea.Cmd) {
 // newCard переключает модель на форму создания новой карты и инициализирует форму значениями по умолчанию.
 func (m List) newCard() (tea.Model, tea.Cmd) {
 	n := &payloads.CardWithComment{}
-	newForm := InitialForm(m.pService, n)
+	newForm := InitialForm(service.NewDefaultCardService(), n)
 	return newForm, newForm.Init()
 }
 
@@ -123,7 +128,7 @@ func (m List) newCard() (tea.Model, tea.Cmd) {
 func (m List) updateCard() (tea.Model, tea.Cmd) {
 	selected := m.list.SelectedItem().(service.CardData)
 	selectedData := &selected.CardWithComment
-	newForm := InitialForm(m.pService, selectedData)
+	newForm := InitialForm(service.NewDefaultCardService(), selectedData)
 	return newForm, newForm.Init()
 }
 
@@ -162,14 +167,16 @@ func (m List) View() string {
 	if m.selected != nil {
 		return m.renderSelected()
 	}
-	var b strings.Builder
-	b.WriteString(headerText)
-	//b.WriteString("\n")
+	return m.renderList()
+}
+
+// renderList генерирует форматированное строковое представление списка, включая сообщение об ошибке, если оно существует.
+func (m List) renderList() string {
+	errorStr := ""
 	if m.modelError != nil {
-		fmt.Fprintf(&b, "\n%s\n", style.ErrorStyle.Render(m.modelError.Error()))
+		errorStr = style.ErrorStyle.Render(m.modelError.Error())
 	}
-	b.WriteString(m.list.View())
-	return b.String()
+	return fmt.Sprintf(models.ListTemplate, headerText, errorStr, m.list.View())
 }
 
 // refresh обновить обновляет список, получая карты из CardService и устанавливая их как элементы списка.
@@ -188,17 +195,12 @@ func (l *List) refresh() error {
 
 // renderSelected генерирует и возвращает форматированное строковое представление выбранной карты и его сведений.
 func (l List) renderSelected() string {
-	var b strings.Builder
-	b.WriteString(selectedHeaderText)
-	b.WriteString("\n")
-	fmt.Fprintf(&b,
-		"\nНомер: %s\nДата: %s\nДержатель: %s\nCVV: %s\nКомментарий: %s\n",
+	return fmt.Sprintf(selectedTemplate,
+		selectedHeaderText,
 		style.FocusedStyle.Render(string(l.selected.Number)),
 		style.FocusedStyle.Render(string(l.selected.Date)),
 		style.FocusedStyle.Render(string(l.selected.Owner)),
 		style.FocusedStyle.Render(string(l.selected.CVV)),
-		l.selected.Comment)
-	b.WriteString("\n")
-	b.WriteString(l.help.ShortHelpView(l.helpKeys))
-	return b.String()
+		l.selected.Comment,
+		l.help.ShortHelpView(l.helpKeys))
 }

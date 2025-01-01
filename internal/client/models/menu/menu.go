@@ -9,10 +9,8 @@ import (
 	"passkeeper/internal/client/models/file"
 	"passkeeper/internal/client/models/password"
 	"passkeeper/internal/client/models/text"
-	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
-	"passkeeper/internal/client/user"
 	"strings"
 )
 
@@ -83,16 +81,16 @@ func (m Model) View() string {
 func (m Model) nextView() (tea.Model, tea.Cmd) {
 	switch m.cb.GetChoice() {
 	case 0:
-		l := password.NewList(service.NewCRUDPasswordService(serverclient.Inst, user.CurrentUser))
+		l := password.NewList(service.NewDefaultPasswordService())
 		return l, l.Init()
 	case 1:
-		l := text.NewList(service.NewCRUDTextService(serverclient.Inst, user.CurrentUser))
+		l := text.NewList(service.NewDefaultTextService())
 		return l, l.Init()
 	case 2:
-		l := file.NewList(service.NewFileService(serverclient.Inst, user.CurrentUser))
+		l := file.NewList(service.NewDefaultFileService())
 		return l, l.Init()
 	case 3:
-		l := card.NewList(service.NewCRUDCardService(serverclient.Inst, user.CurrentUser))
+		l := card.NewList(service.NewDefaultCardService())
 		return l, l.Init()
 	default:
 		return m, nil

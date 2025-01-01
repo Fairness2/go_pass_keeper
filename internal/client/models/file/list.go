@@ -16,31 +16,37 @@ import (
 	"strings"
 )
 
+const (
+	selectedTemplate = "%s\n\nНазвание: %s\nКомментарий: %s\n\n%s"
+	header           = "Список файлов"
+	selectedHeader   = "Файл"
+	newText          = "Новый файлов"
+	updateText       = "Обновить файлов"
+	deleteText       = "Удалить файлов"
+	pathText         = "Путь для загрузки"
+	downloadText     = "Загрузить файл"
+	changePathText   = "Изменить путь загрузки"
+)
+
 var (
-	headerText         = style.HeaderStyle.Render("Список файлов")
-	selectedHeaderText = style.HeaderStyle.Render("Файл")
-	filePathHeaderText = style.HeaderStyle.Render("путь для загрузки")
+	headerText         = style.HeaderStyle.Render(header)
+	selectedHeaderText = style.HeaderStyle.Render(selectedHeader)
+	filePathHeaderText = style.HeaderStyle.Render(pathText)
 )
 
 // processService определяет интерфейс для управления файлами, включая шифрование, дешифрование, создание, обновление и удаление.
 // Он предоставляет методы для управления данными файла с соответствующими комментариями и поддерживает шифрование и дешифрование на уровне файла.
-type processService interface {
+type iListService interface {
 	Get() ([]service.FileData, error)
-	EncryptItem(body *payloads.FileWithComment) (*payloads.FileWithComment, error)
-	DecryptItems(items []*payloads.FileWithComment) ([]service.FileData, error)
-	Create(body *payloads.FileWithComment) error
-	Update(body *payloads.FileWithComment) error
 	Delete(id string) error
-	EncryptFile(filePath string) (string, error)
 	DecryptFile(from io.Reader, dest io.Writer) error
-	CreateFile(body *payloads.FileWithComment, filePath string) error
 	DownloadFile(id string, destFile string) error
 }
 
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка файлов.
 type List struct {
 	list         list.Model
-	pService     processService
+	pService     iListService
 	modelError   error
 	selected     *service.FileData
 	help         help.Model
@@ -54,31 +60,31 @@ type List struct {
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.FileService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(fileService processService) List {
+func NewList(fileService iListService) List {
 	initialDownloadPath := os.Getenv("HOME") + "/Downloads"
 	m := List{
 		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
 		pService: fileService,
 		help:     help.New(),
 		helpKeys: []key.Binding{
-			key.NewBinding(key.WithHelp("esc, backspace", "Назад"), key.WithKeys("backspace", "esc")),
-			key.NewBinding(key.WithHelp("z", "Загрузить файл"), key.WithKeys("z")),
-			key.NewBinding(key.WithHelp("p", "Изменить путь загрузки"), key.WithKeys("p")),
+			key.NewBinding(key.WithHelp("esc, backspace", models.BackText), key.WithKeys("backspace", "esc")),
+			key.NewBinding(key.WithHelp("z", downloadText), key.WithKeys("z")),
+			key.NewBinding(key.WithHelp("p", changePathText), key.WithKeys("p")),
 		},
 		helpPathKeys: []key.Binding{
-			key.NewBinding(key.WithHelp("esc, backspace", "Назад"), key.WithKeys("backspace", "esc")),
+			key.NewBinding(key.WithHelp("esc, backspace", models.BackText), key.WithKeys("backspace", "esc")),
 		},
 		downloadPath: initialDownloadPath,
-		pathInput:    []components.BlinkInput{components.NewTInput("Путь загрузки", initialDownloadPath, true)},
+		pathInput:    []components.BlinkInput{components.NewTInput(pathText, initialDownloadPath, true)},
 	}
 	m.list.SetShowTitle(false)
 	m.list.AdditionalShortHelpKeys = func() []key.Binding {
 		binds := []key.Binding{
-			key.NewBinding(key.WithHelp("n", "Новый файл"), key.WithKeys("n")),
-			key.NewBinding(key.WithHelp("u", "Обновить файл"), key.WithKeys("u")),
-			key.NewBinding(key.WithHelp("d", "Удалить файл"), key.WithKeys("d")),
-			key.NewBinding(key.WithHelp("z", "Загрузить файл"), key.WithKeys("z")),
-			key.NewBinding(key.WithHelp("p", "Изменить путь загрузки"), key.WithKeys("p")),
+			key.NewBinding(key.WithHelp("n", newText), key.WithKeys("n")),
+			key.NewBinding(key.WithHelp("u", updateText), key.WithKeys("u")),
+			key.NewBinding(key.WithHelp("d", deleteText), key.WithKeys("d")),
+			key.NewBinding(key.WithHelp("z", downloadText), key.WithKeys("z")),
+			key.NewBinding(key.WithHelp("p", changePathText), key.WithKeys("p")),
 		}
 		return binds
 	}
@@ -147,7 +153,7 @@ func (m List) selectItem() (tea.Model, tea.Cmd) {
 // newFile переключает модель на форму создания нового файла и инициализирует форму значениями по умолчанию.
 func (m List) newFile() (tea.Model, tea.Cmd) {
 	n := &payloads.FileWithComment{}
-	newForm := InitialForm(m.pService, n)
+	newForm := InitialForm(service.NewDefaultFileService(), n)
 	return newForm, newForm.Init()
 }
 
@@ -155,7 +161,7 @@ func (m List) newFile() (tea.Model, tea.Cmd) {
 func (m List) updateFile() (tea.Model, tea.Cmd) {
 	selected := m.list.SelectedItem().(service.FileData)
 	selectedData := &selected.FileWithComment
-	newForm := InitialForm(m.pService, selectedData)
+	newForm := InitialForm(service.NewDefaultFileService(), selectedData)
 	return newForm, newForm.Init()
 }
 
@@ -202,14 +208,16 @@ func (m List) View() string {
 	if m.selected != nil {
 		return m.renderSelected()
 	}
-	var b strings.Builder
-	b.WriteString(headerText)
-	//b.WriteString("\n")
+	return m.renderList()
+}
+
+// renderList генерирует форматированное строковое представление списка, включая сообщение об ошибке, если оно существует.
+func (m List) renderList() string {
+	errorStr := ""
 	if m.modelError != nil {
-		fmt.Fprintf(&b, "%s", style.ErrorStyle.Render(m.modelError.Error()))
+		errorStr = style.ErrorStyle.Render(m.modelError.Error())
 	}
-	b.WriteString(m.list.View())
-	return b.String()
+	return fmt.Sprintf(models.ListTemplate, headerText, errorStr, m.list.View())
 }
 
 // refresh обновить обновляет список, получая файлы из FileService и устанавливая их как элементы списка.
@@ -228,16 +236,11 @@ func (l *List) refresh() error {
 
 // renderSelected генерирует и возвращает форматированное строковое представление выбранного файла и его сведений.
 func (l List) renderSelected() string {
-	var b strings.Builder
-	b.WriteString(selectedHeaderText)
-	b.WriteString("\n")
-	fmt.Fprintf(&b,
-		"\nНазвание: %s\nКомментарий: %s\n",
+	return fmt.Sprintf(selectedTemplate,
+		selectedHeaderText,
 		style.FocusedStyle.Render(string(l.selected.Name)),
-		l.selected.Comment)
-	b.WriteString("\n")
-	b.WriteString(l.help.ShortHelpView(l.helpKeys))
-	return b.String()
+		l.selected.Comment,
+		l.help.ShortHelpView(l.helpKeys))
 }
 
 // downloadFile загружает выбранный файл, расшифровывает его и сохраняет по указанному пути загрузки, обрабатывая ошибки, если таковые имеются.
@@ -310,37 +313,10 @@ func (l List) pathUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			l.focusIndex = models.IncrementCircleIndex(l.focusIndex, len(l.pathInput), s)
 
-			return l, l.getCmds()
+			return l, models.GetCmds(l.pathInput, l.focusIndex)
 		}
 	}
 	// Handle character input and blinking
-	cmd := l.updateInputs(msg)
+	cmd := models.UpdateInputs(msg, l.pathInput)
 	return l, cmd
-}
-
-// getCmds генерирует пакетную команду для обновления состояния фокуса входных данных формы на основе текущего индекса фокуса.
-func (l List) getCmds() tea.Cmd {
-	cmds := make([]tea.Cmd, len(l.pathInput))
-	for i, input := range l.pathInput {
-		if l.focusIndex == i {
-			cmds[i] = input.Focus()
-		} else {
-			input.Blur()
-		}
-	}
-	return tea.Batch(cmds...)
-}
-
-// updateInputs обновляет все входные компоненты в форме на основе предоставленного сообщения и возвращает пакетную команду для обновлений.
-func (l *List) updateInputs(msg tea.Msg) tea.Cmd {
-	cmds := make([]tea.Cmd, len(l.pathInput))
-	for i, input := range l.pathInput {
-		switch r := input.(type) {
-		case *components.TInput:
-			l.pathInput[i], cmds[i] = r.Update(msg)
-		case *components.TArea:
-			l.pathInput[i], cmds[i] = r.Update(msg)
-		}
-	}
-	return tea.Batch(cmds...)
 }

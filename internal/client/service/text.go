@@ -1,6 +1,7 @@
 package service
 
 import (
+	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/payloads"
 )
@@ -44,4 +45,8 @@ func NewCRUDTextService(client crudClient, user *user.User) *CRUDService[*payloa
 			}
 		},
 	}
+}
+
+func NewDefaultTextService() *CRUDService[*payloads.TextWithComment, TextData] {
+	return NewCRUDTextService(serverclient.Inst, user.CurrentUser)
 }

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"passkeeper/internal/client/serverclient"
 	"passkeeper/internal/client/user"
 	"passkeeper/internal/payloads"
 )
@@ -38,4 +39,8 @@ func NewCRUDCardService(client crudClient, user *user.User) *CRUDService[*payloa
 			}
 		},
 	}
+}
+
+func NewDefaultCardService() *CRUDService[*payloads.CardWithComment, CardData] {
+	return NewCRUDCardService(serverclient.Inst, user.CurrentUser)
 }

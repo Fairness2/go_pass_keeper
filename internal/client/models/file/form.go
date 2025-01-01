@@ -9,16 +9,10 @@ import (
 	"os"
 	"passkeeper/internal/client/components"
 	"passkeeper/internal/client/models"
+	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
 	"passkeeper/internal/payloads"
 	"strings"
-)
-
-var (
-	focusedButton    = style.ButtonFocusedStyle.Render("[ Сохранить ]")
-	headerNewText    = style.HeaderStyle.Render("Новый файл")
-	headerUpdateText = style.HeaderStyle.Render("Изменить файл")
-	blurredButton    = style.ButtonBlurredStyle.Render("[ Сохранить ]")
 )
 
 const (
@@ -27,10 +21,32 @@ const (
 	commentI
 )
 
+const (
+	newTextHeader    = "Новый файл"
+	updateTextHeader = "Изменить файл"
+)
+
+var (
+	focusedButton      = style.ButtonFocusedStyle.Render(models.SaveText)
+	headerNewText      = style.HeaderStyle.Render(newTextHeader)
+	headerUpdateText   = style.HeaderStyle.Render(updateTextHeader)
+	blurredButton      = style.ButtonBlurredStyle.Render(models.SaveText)
+	pathPlaceholder    = "Путь к файлу"
+	namePlaceholder    = "Название"
+	commentPlaceholder = "Comment"
+)
+
+type iFormService interface {
+	EncryptItem(body *payloads.FileWithComment) (*payloads.FileWithComment, error)
+	EncryptFile(filePath string) (string, error)
+	CreateFile(body *payloads.FileWithComment, filePath string) error
+	Update(body *payloads.FileWithComment) error
+}
+
 // Form представляет собой структуру для управления формами пользовательского ввода, включая управление фокусом и проверку ввода.
 type Form struct {
 	focusIndex int
-	pService   processService
+	pService   iFormService
 	data       *payloads.FileWithComment
 	modelError error
 	inputs     []components.BlinkInput
@@ -39,10 +55,10 @@ type Form struct {
 }
 
 // InitialForm инициализирует и возвращает форму с предопределенными полями ввода и привязками помощи по навигации с помощью клавиатуры.
-func InitialForm(service processService, data *payloads.FileWithComment) Form {
-	fp := components.NewTInput("Путь к файлу", "", true)
-	name := components.NewTInput("Название", string(data.Name), false)
-	comment := components.NewTArea("Comment", data.Comment, false)
+func InitialForm(service iFormService, data *payloads.FileWithComment) Form {
+	fp := components.NewTInput(pathPlaceholder, "", true)
+	name := components.NewTInput(namePlaceholder, string(data.Name), false)
+	comment := components.NewTArea(commentPlaceholder, data.Comment, false)
 
 	m := Form{
 		pService: service,
@@ -52,12 +68,8 @@ func InitialForm(service processService, data *payloads.FileWithComment) Form {
 			name,
 			comment,
 		},
-		help: help.New(),
-		helpKeys: []key.Binding{
-			key.NewBinding(key.WithHelp("ctrl+c, esc", "Выход"), key.WithKeys("ctrl+c", "esc")),
-			key.NewBinding(key.WithHelp("tab, shift+tab, up, down", "Переход по форме"), key.WithKeys("tab", "shift+tab", "up", "down")),
-			key.NewBinding(key.WithHelp("enter", "Принять"), key.WithKeys("enter")),
-		},
+		help:     help.New(),
+		helpKeys: models.BaseFormHelp,
 	}
 
 	return m
@@ -87,11 +99,11 @@ func (m Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.focusIndex = models.IncrementCircleIndex(m.focusIndex, len(m.inputs), s)
 
-			return m, m.getCmds()
+			return m, models.GetCmds(m.inputs, m.focusIndex)
 		}
 	}
 	// Handle character input and blinking
-	cmd := m.updateInputs(msg)
+	cmd := models.UpdateInputs(msg, m.inputs)
 	return m, cmd
 }
 
@@ -103,54 +115,27 @@ func (m Form) updateFile() (tea.Model, tea.Cmd) {
 	m.data, err = m.pService.EncryptItem(m.data)
 	if err != nil {
 		m.modelError = err
-		return m, m.getCmds()
+		return m, models.GetCmds(m.inputs, m.focusIndex)
 	}
 	if m.data.ID == "" {
 		encFilePath, err := m.pService.EncryptFile(m.inputs[filePathI].Value())
 		if err != nil {
 			m.modelError = err
-			return m, m.getCmds()
+			return m, models.GetCmds(m.inputs, m.focusIndex)
 		}
 		defer os.Remove(encFilePath)
 		if err = m.pService.CreateFile(m.data, encFilePath); err != nil {
 			m.modelError = err
-			return m, m.getCmds()
+			return m, models.GetCmds(m.inputs, m.focusIndex)
 		}
 	} else {
 		if err = m.pService.Update(m.data); err != nil {
 			m.modelError = err
-			return m, m.getCmds()
+			return m, models.GetCmds(m.inputs, m.focusIndex)
 		}
 	}
-	l := NewList(m.pService)
+	l := NewList(service.NewDefaultFileService())
 	return l, l.Init()
-}
-
-// getCmds генерирует пакетную команду для обновления состояния фокуса входных данных формы на основе текущего индекса фокуса.
-func (m Form) getCmds() tea.Cmd {
-	cmds := make([]tea.Cmd, len(m.inputs))
-	for i, input := range m.inputs {
-		if m.focusIndex == i {
-			cmds[i] = input.Focus()
-		} else {
-			input.Blur()
-		}
-	}
-	return tea.Batch(cmds...)
-}
-
-// updateInputs обновляет все входные компоненты в форме на основе предоставленного сообщения и возвращает пакетную команду для обновлений.
-func (m *Form) updateInputs(msg tea.Msg) tea.Cmd {
-	cmds := make([]tea.Cmd, len(m.inputs))
-	for i, input := range m.inputs {
-		switch r := input.(type) {
-		case *components.TInput:
-			m.inputs[i], cmds[i] = r.Update(msg)
-		case *components.TArea:
-			m.inputs[i], cmds[i] = r.Update(msg)
-		}
-	}
-	return tea.Batch(cmds...)
 }
 
 // View отображает форму на основе ее текущего состояния, включая входные данные, кнопки и ошибки, и возвращает визуализированную строку.
