@@ -6,7 +6,6 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"passkeeper/internal/client/models"
 	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
@@ -23,7 +22,6 @@ const (
 )
 
 var (
-	docStyle           = lipgloss.NewStyle()
 	headerText         = style.HeaderStyle.Render(header)
 	selectedHeaderText = style.HeaderStyle.Render(selectedHeader)
 )
