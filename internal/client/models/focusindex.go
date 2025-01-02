@@ -24,7 +24,8 @@ const (
 var (
 	// BaseFormHelp определяет список привязок клавиш для базовой навигации по форме и таких действий, как выход, навигация и подтверждение.
 	BaseFormHelp = []key.Binding{
-		key.NewBinding(key.WithHelp("ctrl+c, esc", EscapeText), key.WithKeys("ctrl+c", "esc")),
+		key.NewBinding(key.WithHelp("ctrl+c", EscapeText), key.WithKeys("ctrl+c")),
+		key.NewBinding(key.WithHelp("esc", BackText), key.WithKeys("esc")),
 		key.NewBinding(key.WithHelp("tab, shift+tab, up, down", NavigationText), key.WithKeys("tab", "shift+tab", "up", "down")),
 		key.NewBinding(key.WithHelp("enter", OKText), key.WithKeys("enter")),
 	}

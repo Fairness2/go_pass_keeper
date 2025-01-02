@@ -34,7 +34,8 @@ type iListService interface {
 
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка паролей.
 type List struct {
-	list       list.Model
+	models.Backable
+	list       *list.Model
 	pService   iListService
 	modelError error
 	selected   *service.PassData
@@ -44,32 +45,34 @@ type List struct {
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.PasswordService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(passwordService iListService) List {
+func NewList(passwordService iListService, lastModel tea.Model) List {
+	l := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	m := List{
-		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
+		list:     &l,
 		pService: passwordService,
 		help:     help.New(),
 		helpKeys: []key.Binding{
 			key.NewBinding(key.WithHelp("esc, backspace", models.EscapeText), key.WithKeys("backspace", "esc")),
 		},
+		Backable: models.NewBackable(lastModel),
 	}
 	m.list.SetShowTitle(false)
 	m.list.AdditionalShortHelpKeys = func() []key.Binding {
-		binds := make([]key.Binding, 3)
+		binds := make([]key.Binding, 4)
 		binds[0] = key.NewBinding(key.WithHelp("n", newText), key.WithKeys("n"))
 		binds[1] = key.NewBinding(key.WithHelp("u", updateText), key.WithKeys("u"))
 		binds[2] = key.NewBinding(key.WithHelp("d", deleteText), key.WithKeys("d"))
+		binds[3] = key.NewBinding(key.WithHelp("esc", models.BackText), key.WithKeys("esc"))
 		return binds
-	}
-
-	if err := m.refresh(); err != nil {
-		m.modelError = err
 	}
 	return m
 }
 
 // Init инициализирует модель List и возвращает команду для установки размера окна.
 func (m List) Init() tea.Cmd {
+	if err := m.refresh(); err != nil {
+		m.modelError = err
+	}
 	return tea.WindowSize()
 }
 
@@ -86,8 +89,10 @@ func (m List) updateWhileNotSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch expr := msg.String(); expr {
-		case "ctrl+c", "esc":
+		case "ctrl+c":
 			return m, tea.Quit
+		case "esc":
+			return m.Back()
 		case "enter":
 			return m.selectItem()
 		case "n":
@@ -98,11 +103,11 @@ func (m List) updateWhileNotSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.deletePassword()
 		}
 	case tea.WindowSizeMsg:
-		models.Resize(&m.list, msg)
+		models.Resize(m.list, msg)
 	}
 
 	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
+	*m.list, cmd = m.list.Update(msg)
 	return m, cmd
 }
 
@@ -117,7 +122,7 @@ func (m List) selectItem() (tea.Model, tea.Cmd) {
 // newPassword переключает модель на форму создания нового пароля и инициализирует форму значениями по умолчанию.
 func (m List) newPassword() (tea.Model, tea.Cmd) {
 	n := &payloads.PasswordWithComment{}
-	newForm := InitialForm(service.NewDefaultPasswordService(), n)
+	newForm := InitialForm(service.NewDefaultPasswordService(), n, m)
 	return newForm, newForm.Init()
 }
 
@@ -125,7 +130,7 @@ func (m List) newPassword() (tea.Model, tea.Cmd) {
 func (m List) updatePassword() (tea.Model, tea.Cmd) {
 	selected := m.list.SelectedItem().(service.PassData)
 	selectedData := &selected.PasswordWithComment
-	newForm := InitialForm(service.NewDefaultPasswordService(), selectedData)
+	newForm := InitialForm(service.NewDefaultPasswordService(), selectedData, m)
 	return newForm, newForm.Init()
 }
 

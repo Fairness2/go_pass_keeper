@@ -86,16 +86,16 @@ func (m Model) View() string {
 func (m Model) nextView() (tea.Model, tea.Cmd) {
 	switch m.cb.GetChoice() {
 	case 0:
-		l := password.NewList(service.NewDefaultPasswordService())
+		l := password.NewList(service.NewDefaultPasswordService(), m)
 		return l, l.Init()
 	case 1:
-		l := text.NewList(service.NewDefaultTextService())
+		l := text.NewList(service.NewDefaultTextService(), m)
 		return l, l.Init()
 	case 2:
-		l := file.NewList(service.NewDefaultFileService())
+		l := file.NewList(service.NewDefaultFileService(), m)
 		return l, l.Init()
 	case 3:
-		l := card.NewList(service.NewDefaultCardService())
+		l := card.NewList(service.NewDefaultCardService(), m)
 		return l, l.Init()
 	default:
 		return m, nil

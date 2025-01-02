@@ -13,7 +13,6 @@ import (
 	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
 	"passkeeper/internal/payloads"
-	"strings"
 )
 
 const (
@@ -32,6 +31,11 @@ var (
 	headerText         = style.HeaderStyle.Render(header)
 	selectedHeaderText = style.HeaderStyle.Render(selectedHeader)
 	filePathHeaderText = style.HeaderStyle.Render(pathText)
+	pathCnf            = &models.FormViewConfig{
+		HeaderNewText: filePathHeaderText,
+		BlurredButton: blurredButton,
+		FocusedButton: focusedButton,
+	}
 )
 
 // processService определяет интерфейс для управления файлами, включая шифрование, дешифрование, создание, обновление и удаление.
@@ -45,7 +49,8 @@ type iListService interface {
 
 // List представляет модель, управляющую отображением, состоянием и взаимодействием списка файлов.
 type List struct {
-	list         list.Model
+	models.Backable
+	list         *list.Model
 	pService     iListService
 	modelError   error
 	selected     *service.FileData
@@ -60,10 +65,11 @@ type List struct {
 
 // NewList инициализирует и возвращает новую модель списка, настроенную с использованием предоставленного service.FileService.
 // Он устанавливает внутреннюю модель списка, клавиши справки и обновляет содержимое списка.
-func NewList(fileService iListService) List {
+func NewList(fileService iListService, lastModel tea.Model) List {
 	initialDownloadPath := os.Getenv("HOME") + "/Downloads"
+	l := list.New(nil, list.NewDefaultDelegate(), 0, 0)
 	m := List{
-		list:     list.New(nil, list.NewDefaultDelegate(), 0, 0),
+		list:     &l,
 		pService: fileService,
 		help:     help.New(),
 		helpKeys: []key.Binding{
@@ -76,6 +82,7 @@ func NewList(fileService iListService) List {
 		},
 		downloadPath: initialDownloadPath,
 		pathInput:    []components.BlinkInput{components.NewTInput(pathText, initialDownloadPath, true)},
+		Backable:     models.NewBackable(lastModel),
 	}
 	m.list.SetShowTitle(false)
 	m.list.AdditionalShortHelpKeys = func() []key.Binding {
@@ -85,18 +92,19 @@ func NewList(fileService iListService) List {
 			key.NewBinding(key.WithHelp("d", deleteText), key.WithKeys("d")),
 			key.NewBinding(key.WithHelp("z", downloadText), key.WithKeys("z")),
 			key.NewBinding(key.WithHelp("p", changePathText), key.WithKeys("p")),
+			key.NewBinding(key.WithHelp("esc", models.BackText), key.WithKeys("esc")),
 		}
 		return binds
 	}
 
-	if err := m.refresh(); err != nil {
-		m.modelError = err
-	}
 	return m
 }
 
 // Init инициализирует модель List и возвращает команду для установки размера окна.
 func (m List) Init() tea.Cmd {
+	if err := m.refresh(); err != nil {
+		m.modelError = err
+	}
 	return tea.WindowSize()
 }
 
@@ -116,8 +124,10 @@ func (m List) updateWhileNotSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch expr := msg.String(); expr {
-		case "ctrl+c", "esc":
+		case "ctrl+c":
 			return m, tea.Quit
+		case "esc":
+			return m.Back()
 		case "enter":
 			return m.selectItem()
 		case "n":
@@ -133,11 +143,11 @@ func (m List) updateWhileNotSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 	case tea.WindowSizeMsg:
-		models.Resize(&m.list, msg)
+		models.Resize(m.list, msg)
 	}
 
 	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
+	*m.list, cmd = m.list.Update(msg)
 	return m, cmd
 }
 
@@ -152,7 +162,7 @@ func (m List) selectItem() (tea.Model, tea.Cmd) {
 // newFile переключает модель на форму создания нового файла и инициализирует форму значениями по умолчанию.
 func (m List) newFile() (tea.Model, tea.Cmd) {
 	n := &payloads.FileWithComment{}
-	newForm := InitialForm(service.NewDefaultFileService(), n)
+	newForm := InitialForm(service.NewDefaultFileService(), n, m)
 	return newForm, newForm.Init()
 }
 
@@ -160,7 +170,7 @@ func (m List) newFile() (tea.Model, tea.Cmd) {
 func (m List) updateFile() (tea.Model, tea.Cmd) {
 	selected := m.list.SelectedItem().(service.FileData)
 	selectedData := &selected.FileWithComment
-	newForm := InitialForm(service.NewDefaultFileService(), selectedData)
+	newForm := InitialForm(service.NewDefaultFileService(), selectedData, m)
 	return newForm, newForm.Init()
 }
 
@@ -185,6 +195,8 @@ func (m List) updateWhileSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch expr := msg.String(); expr {
+		case "ctrl+c":
+			return m, tea.Quit
 		case "esc", "backspace":
 			m.selected = nil
 			return m, nil
@@ -202,7 +214,12 @@ func (m List) updateWhileSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View генерирует и возвращает форматированное строковое представление списка, включая любой выбранный элемент или сообщение об ошибке.
 func (m List) View() string {
 	if m.showPathForm {
-		return m.renderPath()
+		return models.FormView(pathCnf,
+			"",
+			m.pathInput,
+			m.focusIndex,
+			nil,
+			m.help.ShortHelpView(m.helpPathKeys))
 	}
 	if m.selected != nil {
 		return m.renderSelected()
@@ -273,49 +290,35 @@ func (l List) downloadFile() (tea.Model, tea.Cmd) {
 	return l, nil
 }
 
-// renderSelected генерирует и возвращает форматированное строковое представление заполнения пути загрузки.
-func (l List) renderPath() string {
-	var b strings.Builder
-	b.WriteString(filePathHeaderText)
-	b.WriteString("\n")
-	for _, i := range l.pathInput {
-		b.WriteString(i.View())
-		b.WriteString("\n")
-	}
-	button := &blurredButton
-	if l.focusIndex == len(l.pathInput) {
-		button = &focusedButton
-	}
-	fmt.Fprintf(&b, "%s\n\n", *button)
-	b.WriteString(l.help.ShortHelpView(l.helpPathKeys))
-	return b.String()
-}
-
 // pathUpdate обрабатывает сообщения для обновления состояния списка при заполнении пути загрузки, управляет фокусом и обрабатывает ввод для формы.
 func (l List) pathUpdate(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc":
+		case "ctrl+c":
 			return l, tea.Quit
+		case "esc", "backspace":
+			l.showPathForm = false
+			return l, nil
 		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
-			s := msg.String()
-			if s == "enter" && l.focusIndex == len(l.pathInput) {
-				l.downloadPath = l.pathInput[0].Value()
-				l.showPathForm = false
-				return l, nil
-			}
-			// На комментарии нужно разрешать делать новую строку
-			if s == "enter" && l.focusIndex == len(l.pathInput)-1 {
-				break
-			}
-			l.focusIndex = models.IncrementCircleIndex(l.focusIndex, len(l.pathInput), s)
-
-			return l, models.GetCmds(l.pathInput, l.focusIndex)
+			return l.navigationMessage(msg)
 		}
 	}
 	// Handle character input and blinking
 	cmd := models.UpdateInputs(msg, l.pathInput)
 	return l, cmd
+}
+
+// navigationMessage обрабатывает события нажатия клавиш для навигации по полям ввода в форме и соответствующим образом запускает обновления фокуса полей или действия.
+func (l List) navigationMessage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	s := msg.String()
+	if s == "enter" && l.focusIndex == len(l.pathInput) {
+		l.downloadPath = l.pathInput[0].Value()
+		l.showPathForm = false
+		return l, nil
+	}
+	l.focusIndex = models.IncrementCircleIndex(l.focusIndex, len(l.pathInput), s)
+
+	return l, models.GetCmds(l.pathInput, l.focusIndex)
 }

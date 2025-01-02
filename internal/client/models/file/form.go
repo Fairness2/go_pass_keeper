@@ -9,7 +9,6 @@ import (
 	"os"
 	"passkeeper/internal/client/components"
 	"passkeeper/internal/client/models"
-	"passkeeper/internal/client/service"
 	"passkeeper/internal/client/style"
 	"passkeeper/internal/payloads"
 	"strings"
@@ -45,6 +44,7 @@ type iFormService interface {
 
 // Form представляет собой структуру для управления формами пользовательского ввода, включая управление фокусом и проверку ввода.
 type Form struct {
+	models.Backable
 	focusIndex int
 	pService   iFormService
 	data       *payloads.FileWithComment
@@ -55,7 +55,7 @@ type Form struct {
 }
 
 // InitialForm инициализирует и возвращает форму с предопределенными полями ввода и привязками помощи по навигации с помощью клавиатуры.
-func InitialForm(service iFormService, data *payloads.FileWithComment) Form {
+func InitialForm(service iFormService, data *payloads.FileWithComment, lastModel tea.Model) Form {
 	fp := components.NewTInput(pathPlaceholder, "", true)
 	name := components.NewTInput(namePlaceholder, string(data.Name), false)
 	comment := components.NewTArea(commentPlaceholder, data.Comment, false)
@@ -70,6 +70,7 @@ func InitialForm(service iFormService, data *payloads.FileWithComment) Form {
 		},
 		help:     help.New(),
 		helpKeys: models.BaseFormHelp,
+		Backable: models.NewBackable(lastModel),
 	}
 
 	return m
@@ -85,8 +86,10 @@ func (m Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc":
+		case "ctrl+c":
 			return m, tea.Quit
+		case "esc":
+			return m.Back()
 		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
 			return m.navigationMessage(msg)
@@ -134,8 +137,7 @@ func (m Form) updateFile() (tea.Model, tea.Cmd) {
 		m.modelError = err
 		return m, models.GetCmds(m.inputs, m.focusIndex)
 	}
-	l := NewList(service.NewDefaultFileService())
-	return l, l.Init()
+	return m.Back()
 }
 
 // View отображает форму на основе ее текущего состояния, включая входные данные, кнопки и ошибки, и возвращает визуализированную строку.
