@@ -1,0 +1,759 @@
+basePath: /
+definitions:
+  payloads.Authorization:
+    properties:
+      refresh:
+        type: string
+      token:
+        type: string
+    type: object
+  payloads.CardWithComment:
+    properties:
+      comment:
+        type: string
+      cvv:
+        items:
+          type: integer
+        type: array
+      date:
+        items:
+          type: integer
+        type: array
+      id:
+        type: string
+      number:
+        items:
+          type: integer
+        type: array
+      owner:
+        items:
+          type: integer
+        type: array
+    type: object
+  payloads.ErrorResponseBody:
+    properties:
+      message:
+        type: string
+      status:
+        description: Успешный или не успешный результат
+        type: integer
+    type: object
+  payloads.FileWithComment:
+    properties:
+      comment:
+        type: string
+      id:
+        type: string
+      name:
+        items:
+          type: integer
+        type: array
+    type: object
+  payloads.PasswordWithComment:
+    properties:
+      comment:
+        type: string
+      domen:
+        type: string
+      id:
+        type: string
+      password:
+        items:
+          type: integer
+        type: array
+      username:
+        items:
+          type: integer
+        type: array
+    type: object
+  payloads.Register:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  payloads.SaveCard:
+    properties:
+      comment:
+        type: string
+      cvv:
+        items:
+          type: integer
+        type: array
+      date:
+        items:
+          type: integer
+        type: array
+      number:
+        items:
+          type: integer
+        type: array
+      owner:
+        items:
+          type: integer
+        type: array
+    type: object
+  payloads.SavePassword:
+    properties:
+      comment:
+        type: string
+      domen:
+        type: string
+      password:
+        items:
+          type: integer
+        type: array
+      username:
+        items:
+          type: integer
+        type: array
+    type: object
+  payloads.SaveText:
+    properties:
+      comment:
+        type: string
+      text_data:
+        items:
+          type: integer
+        type: array
+    type: object
+  payloads.TextWithComment:
+    properties:
+      comment:
+        type: string
+      id:
+        type: string
+      text_data:
+        items:
+          type: integer
+        type: array
+    type: object
+  payloads.UpdateFile:
+    properties:
+      comment:
+        type: string
+      id:
+        type: string
+      name:
+        items:
+          type: integer
+        type: array
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API для работы с хранилищем паролей и данных
+  title: API Passkeeper
+  version: "1.0"
+paths:
+  /api/content/card:
+    get:
+      consumes:
+      - application/json
+      description: Получает список карт и связанных с ними комментариев для аутентифицированного
+        пользователя.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Array of user cards with comments
+          schema:
+            items:
+              $ref: '#/definitions/payloads.CardWithComment'
+            type: array
+        "401":
+          description: User not authorized
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Получить карты пользователей с комментариями
+      tags:
+      - card
+    post:
+      consumes:
+      - application/json
+      description: Создает новую запись о карту вместе с необязательным комментарием
+        для аутентифицированного пользователя.
+      parameters:
+      - description: Card data and comment
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.SaveCard'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid input or bad request
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Сохранить карту пользователя с комментарием
+      tags:
+      - card
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующую карту вместе с комментарием для аутентифицированного
+        пользователя. Гарантирует существование карты и обрабатывает проверку.
+      parameters:
+      - description: Updated card data and comment
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.SaveCard'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid input or bad request
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "404":
+          description: Card not found
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Обновить карту пользователя с комментарием
+      tags:
+      - card
+  /api/content/card/{id}:
+    delete:
+      description: Удаляет карту пользователя по его идентификатору. Гарантирует,
+        что пользователь аутентифицирован и идентификатор карты корректен.
+      parameters:
+      - description: Card ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid card ID
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Удалить карту пользователя
+      tags:
+      - card
+  /api/content/file:
+    get:
+      consumes:
+      - application/json
+      description: Получает список файлов и связанных с ними комментариев для аутентифицированного
+        пользователя.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Array of user files with comments
+          schema:
+            items:
+              $ref: '#/definitions/payloads.FileWithComment'
+            type: array
+        "401":
+          description: User not authorized
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Получить файлы пользователей с комментариями
+      tags:
+      - file
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующий файл вместе с комментарием для аутентифицированного
+        пользователя. Гарантирует существование файла и обрабатывает проверку.
+      parameters:
+      - description: Updated file data and comment
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.UpdateFile'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid input or bad request
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Обновить файл пользователя с комментарием
+      tags:
+      - files
+  /api/content/file/{id}:
+    delete:
+      description: Удаляет файл пользователя по его идентификатору. Гарантирует, что
+        пользователь аутентифицирован и идентификатор файла корректен.
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid file ID
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Удалить файл пользователя
+      tags:
+      - file
+  /api/content/file/download/{id}:
+    get:
+      description: Позволяет аутентифицированному пользователю загружать файл по его
+        идентификатору.
+      parameters:
+      - description: File ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid file ID
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "404":
+          description: File not found
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Загрузите файл пользователя
+      tags:
+      - file
+  /api/content/files:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Сохраняет новый файл для аутентифицированного пользователя. Запрос
+        должен включать составной файл, имя и необязательный комментарий.
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Name of the file
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Optional comment for the file
+        in: formData
+        name: comment
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid input or bad request
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Сохраните новый файл с необязательным комментарием.
+      tags:
+      - file
+  /api/content/password:
+    get:
+      consumes:
+      - application/json
+      description: Получает список паролей и связанных с ними комментариев для аутентифицированного
+        пользователя.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Array of user passwords with comments
+          schema:
+            items:
+              $ref: '#/definitions/payloads.PasswordWithComment'
+            type: array
+        "401":
+          description: User not authorized
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Получить пароли пользователей с комментариями
+      tags:
+      - password
+    post:
+      consumes:
+      - application/json
+      description: Создает новую запись о пароле вместе с необязательным комментарием
+        для аутентифицированного пользователя.
+      parameters:
+      - description: Password data and comment
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.SavePassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid input or bad request
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Сохранить пользовательский пароль с комментарием
+      tags:
+      - text
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующий пароль вместе с комментарием для аутентифицированного
+        пользователя. Гарантирует существование пароля и обрабатывает проверку.
+      parameters:
+      - description: Updated password data and comment
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.SavePassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid input or bad request
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "404":
+          description: Password not found
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Обновить пароль пользователя с комментарием
+      tags:
+      - password
+  /api/content/password/{id}:
+    delete:
+      description: Удаляет пароль пользователя по его идентификатору. Гарантирует,
+        что пользователь аутентифицирован и идентификатор пароля корректен.
+      parameters:
+      - description: Password ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid password ID
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Удалить пароль пользователя
+      tags:
+      - password
+  /api/content/text:
+    get:
+      consumes:
+      - application/json
+      description: Получает список текстов и связанных с ними комментариев для аутентифицированного
+        пользователя.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Array of user texts with comments
+          schema:
+            items:
+              $ref: '#/definitions/payloads.TextWithComment'
+            type: array
+        "401":
+          description: User not authorized
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Получить тексты пользователей с комментариями
+      tags:
+      - text
+    post:
+      consumes:
+      - application/json
+      description: Создает новую текстовую запись вместе с необязательным комментарием
+        для аутентифицированного пользователя.
+      parameters:
+      - description: Text data and comment
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.SaveText'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid input or bad request
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Сохранить пользовательский текст с комментарием
+      tags:
+      - text
+    put:
+      consumes:
+      - application/json
+      description: Обновляет существующий текст вместе с комментарием для аутентифицированного
+        пользователя. Гарантирует существование текста и обрабатывает проверку.
+      parameters:
+      - description: Updated text data and comment
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.SaveText'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid input or bad request
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "404":
+          description: Text not found
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Обновить текст пользователя с комментарием
+      tags:
+      - text
+  /api/content/text/{id}:
+    delete:
+      description: Удаляет текст пользователя по его идентификатору. Гарантирует,
+        что пользователь аутентифицирован и идентификатор текста корректен.
+      parameters:
+      - description: Text ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Invalid text ID
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: User not authenticated
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Удалить текст пользователя
+      tags:
+      - text
+  /api/user/login:
+    post:
+      consumes:
+      - application/json
+      description: обрабатывает вход пользователя в систему, проверяя учетные данные
+        и генерируя токен авторизации.
+      parameters:
+      - description: Login Payload
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.Register'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payloads.Authorization'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Вход пользователя в систему
+      tags:
+      - Пользователь
+  /api/user/register:
+    post:
+      consumes:
+      - application/json
+      description: обрабатывает регистрацию новых пользователей, включая проверку,
+        создание и генерацию токенов.
+      parameters:
+      - description: Register Payload
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/payloads.Register'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/payloads.Authorization'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/payloads.ErrorResponseBody'
+      summary: Регистрация нового пользователя
+      tags:
+      - Пользователь
+swagger: "2.0"
