@@ -497,7 +497,7 @@ func TestCrudRepository_GetByUserID(t *testing.T) {
 				mockDB := NewMockSQLExecutor(ctr)
 				expectedResult := want
 				mockDB.EXPECT().SelectContext(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-					func(ctx context.Context, dest *[]models.TextWithComment, query string, args ...interface{}) error {
+					func(ctx context.Context, dest *[]models.TextWithComment, query string, args ...any) error {
 						*dest = expectedResult
 						return nil
 					},
@@ -526,7 +526,7 @@ func TestCrudRepository_GetByUserID(t *testing.T) {
 			getExec: func() SQLExecutor {
 				mockDB := NewMockSQLExecutor(ctr)
 				mockDB.EXPECT().SelectContext(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-					func(ctx context.Context, dest *[]models.TextWithComment, query string, args ...interface{}) error {
+					func(ctx context.Context, dest *[]models.TextWithComment, query string, args ...any) error {
 						*dest = []models.TextWithComment{}
 						return nil
 					},

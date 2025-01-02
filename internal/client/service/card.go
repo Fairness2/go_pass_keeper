@@ -41,6 +41,7 @@ func NewCRUDCardService(client crudClient, user *user.User) *CRUDService[*payloa
 	}
 }
 
+// NewDefaultCardService создает службу CRUD по умолчанию для управления картами с использованием глобального клиента для взаимодействия с сервером и текущего пользователя.
 func NewDefaultCardService() *CRUDService[*payloads.CardWithComment, CardData] {
 	return NewCRUDCardService(serverclient.Inst, user.CurrentUser)
 }

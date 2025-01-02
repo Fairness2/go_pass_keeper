@@ -70,7 +70,7 @@ func (g *JWTGenerator) Generate(user *models.User) (string, error) {
 func (g *JWTGenerator) Parse(tokenString string) (*jwt.Token, error) {
 	return jwt.Parse(
 		tokenString,
-		func(token *jwt.Token) (interface{}, error) {
+		func(token *jwt.Token) (any, error) {
 			// Don't forget to validate the alg is what you expect:
 			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

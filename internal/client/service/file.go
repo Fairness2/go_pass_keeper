@@ -60,6 +60,7 @@ func NewFileService(client crudClient, user *user.User) *FileService {
 	}
 }
 
+// NewDefaultFileService создает службу CRUD по умолчанию для управления файлами с использованием глобального клиента для взаимодействия с сервером и текущего пользователя.
 func NewDefaultFileService() *FileService {
 	return NewFileService(serverclient.Inst, user.CurrentUser)
 }

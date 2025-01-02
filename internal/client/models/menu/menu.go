@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"passkeeper/internal/client/components"
+	"passkeeper/internal/client/models"
 	"passkeeper/internal/client/models/card"
 	"passkeeper/internal/client/models/file"
 	"passkeeper/internal/client/models/password"
@@ -14,8 +15,16 @@ import (
 	"strings"
 )
 
+const (
+	header      = "Выберите режим"
+	logpassText = "Пары логин/пароль"
+	textText    = "Произвольные текстовые данные"
+	fileText    = "Произвольные бинарные данные"
+	cardText    = "Данные банковских карт"
+)
+
 var (
-	headerText = style.HeaderStyle.Render("Выберите режим")
+	headerText = style.HeaderStyle.Render(header)
 )
 
 // Model представляет собой основную структуру, содержащую компоненты пользовательского интерфейса и привязки клавиш для навигации и взаимодействия.
@@ -29,16 +38,12 @@ type Model struct {
 func NewModel() Model {
 	return Model{
 		cb: components.NewCheckbox(0,
-			"Пары логин/пароль",
-			"Произвольные текстовые данные",
-			"Произвольные бинарные данные",
-			"Данные банковских карт"),
-		help: help.New(),
-		helpKeys: []key.Binding{
-			key.NewBinding(key.WithHelp("ctrl+c, esc", "Выход"), key.WithKeys("ctrl+c", "esc")),
-			key.NewBinding(key.WithHelp("j/k, up/down", "Выбор"), key.WithKeys("j", "down", "k", "up")),
-			key.NewBinding(key.WithHelp("enter", "Принять"), key.WithKeys("enter")),
-		},
+			logpassText,
+			textText,
+			fileText,
+			cardText),
+		help:     help.New(),
+		helpKeys: models.BaseFormHelp,
 	}
 }
 

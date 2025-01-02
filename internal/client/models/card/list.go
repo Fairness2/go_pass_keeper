@@ -100,8 +100,7 @@ func (m List) updateWhileNotSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.deleteCard()
 		}
 	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+		models.Resize(&m.list, msg)
 	}
 
 	var cmd tea.Cmd

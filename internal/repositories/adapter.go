@@ -31,17 +31,17 @@ func (D *DBAdapter) PrepareNamed(query string) (INamedStmt, error) {
 }
 
 // QueryRowxContext выполняет запрос, который, как ожидается, вернет одну строку, и сопоставляет его с IRow для дальнейшей обработки.
-func (D *DBAdapter) QueryRowxContext(ctx context.Context, query string, args ...interface{}) IRow {
+func (D *DBAdapter) QueryRowxContext(ctx context.Context, query string, args ...any) IRow {
 	return D.real.QueryRowxContext(ctx, query, args...)
 }
 
 // SelectContext выполняет запрос и сканирует полученные строки в целевой объект, используя заданный контекст.
-func (D *DBAdapter) SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+func (D *DBAdapter) SelectContext(ctx context.Context, dest any, query string, args ...any) error {
 	return D.real.SelectContext(ctx, dest, query, args...)
 }
 
 // NamedExecContext выполняет именованный оператор с предоставленным контекстом и аргументом, возвращая результат или ошибку.
-func (D *DBAdapter) NamedExecContext(ctx context.Context, query string, arg interface{}) (sql.Result, error) {
+func (D *DBAdapter) NamedExecContext(ctx context.Context, query string, arg any) (sql.Result, error) {
 	return D.real.NamedExecContext(ctx, query, arg)
 }
 
@@ -65,7 +65,7 @@ type NamedStmtAdapter struct {
 }
 
 // QueryRowxContext выполняет именованный оператор с контекстом и аргументами, возвращая одну строку в качестве интерфейса IRow.
-func (n *NamedStmtAdapter) QueryRowxContext(ctx context.Context, arg interface{}) IRow {
+func (n *NamedStmtAdapter) QueryRowxContext(ctx context.Context, arg any) IRow {
 	return n.real.QueryRowxContext(ctx, arg)
 }
 
@@ -84,7 +84,7 @@ func (t *TxxAdapter) PrepareNamed(query string) (INamedStmt, error) {
 }
 
 // NamedExecContext выполняет именованный оператор с заданным контекстом и аргументом, возвращая sql.Result или ошибку.
-func (t *TxxAdapter) NamedExecContext(ctx context.Context, query string, arg interface{}) (sql.Result, error) {
+func (t *TxxAdapter) NamedExecContext(ctx context.Context, query string, arg any) (sql.Result, error) {
 	return t.real.NamedExecContext(ctx, query, arg)
 }
 

@@ -14,10 +14,22 @@ import (
 	"strings"
 )
 
+const (
+	loginI = iota
+	passwordI
+)
+
+const (
+	buttonLogin    = "[ Вход ]"
+	buttonRegister = "[ Регистрация ]"
+	header         = "Вход или регистрация"
+	loginText      = "Логин"
+	passwordText   = "Пароль"
+	infoText       = "Показать/скрыть информацию о клиенте"
+)
+
 var (
-	buttonLogin           = "[ Вход ]"
-	buttonRegister        = "[ Регистрация ]"
-	headerText            = style.HeaderStyle.Render("Вход или регистрация")
+	headerText            = style.HeaderStyle.Render(header)
 	focusedLoginButton    = style.ButtonFocusedStyle.Render(buttonLogin)
 	blurredLoginButton    = style.ButtonBlurredStyle.Render(buttonLogin)
 	focusedRegisterButton = style.ButtonFocusedStyle.Render(buttonRegister)
@@ -32,7 +44,7 @@ type processService interface {
 // Model представляет собой основную структуру для управления состоянием пользовательского интерфейса входа в систему и его взаимодействия с LoginService.
 type Model struct {
 	focusIndex int
-	inputs     []*components.TInput
+	inputs     []components.BlinkInput
 	service    processService
 	modelError error
 	help       help.Model
@@ -42,19 +54,17 @@ type Model struct {
 
 // InitialModel инициализирует новую модель с предопределенными полями ввода имени и пароля и назначает LoginService.
 func InitialModel(service processService) Model {
+	helps := make([]key.Binding, 0, 4)
+	helps = append(helps, models.BaseFormHelp...)
+	helps = append(helps, key.NewBinding(key.WithHelp("f1", infoText), key.WithKeys("f1")))
 	m := Model{
-		inputs: []*components.TInput{
-			components.NewTInput("Логин", "", true),
-			components.NewTPass("Пароль", "", false),
+		inputs: []components.BlinkInput{
+			components.NewTInput(loginText, "", true),
+			components.NewTPass(passwordText, "", false),
 		},
-		service: service,
-		help:    help.New(),
-		helpKeys: []key.Binding{
-			key.NewBinding(key.WithHelp("ctrl+c, esc", "Выход"), key.WithKeys("ctrl+c", "esc")),
-			key.NewBinding(key.WithHelp("tab, shift+tab, up, down", "Переход по форме"), key.WithKeys("tab", "shift+tab", "up", "down")),
-			key.NewBinding(key.WithHelp("enter", "Принять"), key.WithKeys("enter")),
-			key.NewBinding(key.WithHelp("f1", "Показать/скрыть информацию о клиенте"), key.WithKeys("f1")),
-		},
+		service:  service,
+		help:     help.New(),
+		helpKeys: helps,
 	}
 	return m
 }
@@ -74,48 +84,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
-			s := msg.String()
-			if s == "enter" && m.focusIndex == len(m.inputs) {
-				return m.authorize(false)
-			}
-			if s == "enter" && m.focusIndex == len(m.inputs)+1 {
-				return m.authorize(true)
-			}
-			m.focusIndex = models.IncrementCircleIndex(m.focusIndex, len(m.inputs)+1, s)
-			return m, m.getCmds()
+			return m.navigationMessage(msg)
 		case "f1":
 			m.showInfo = !m.showInfo
 			return m, nil
 		}
 	}
 	// Handle character input and blinking
-	cmd := m.updateInputs(msg)
+	cmd := models.UpdateInputs(msg, m.inputs)
 	return m, cmd
 }
 
-// getCmds возвращает пакет команд для обновления состояния фокуса входных данных на основе текущего индекса фокуса в модели.
-func (m Model) getCmds() tea.Cmd {
-	cmds := make([]tea.Cmd, len(m.inputs))
-	for i := 0; i <= len(m.inputs)-1; i++ {
-		if i == m.focusIndex {
-			// Set focused state
-			cmds[i] = m.inputs[i].Focus()
-			continue
-		}
-		// Remove focused state
-		m.inputs[i].Blur()
+// navigationMessage обрабатывает события нажатия клавиш для навигации по полям ввода в форме и соответствующим образом запускает обновления фокуса полей или действия.
+func (m Model) navigationMessage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	s := msg.String()
+	if s == "enter" && m.focusIndex == len(m.inputs) {
+		return m.authorize(false)
 	}
-	return tea.Batch(cmds...)
-}
-
-// updateInputs обновляет состояние каждого поля ввода на основе предоставленного сообщения и собирает их команды.
-func (m *Model) updateInputs(msg tea.Msg) tea.Cmd {
-	cmds := make([]tea.Cmd, len(m.inputs))
-	for i := range m.inputs {
-		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+	if s == "enter" && m.focusIndex == len(m.inputs)+1 {
+		return m.authorize(true)
 	}
-
-	return tea.Batch(cmds...)
+	m.focusIndex = models.IncrementCircleIndex(m.focusIndex, len(m.inputs)+1, s)
+	return m, models.GetCmds(m.inputs, m.focusIndex)
 }
 
 // View генерирует визуальное представление Model, включая поля ввода, кнопку и сообщение об ошибке, если применимо.
@@ -157,8 +147,8 @@ func (m Model) View() string {
 
 // login пытается авторизовать пользователя, используя предоставленные логин и пароль, и в случае неудачи возвращает ошибку.
 func (m Model) login(isRegistration bool) error {
-	login := m.inputs[0].Value()
-	password := m.inputs[1].Value()
+	login := m.inputs[loginI].Value()
+	password := m.inputs[passwordI].Value()
 	return m.service.Login(login, password, isRegistration)
 }
 
@@ -166,7 +156,7 @@ func (m Model) login(isRegistration bool) error {
 func (m Model) authorize(isRegistration bool) (tea.Model, tea.Cmd) {
 	if err := m.login(isRegistration); err != nil {
 		m.modelError = err
-		return m, m.getCmds()
+		return m, models.GetCmds(m.inputs, m.focusIndex)
 	}
 	newM := menu.NewModel()
 	return newM, newM.Init()

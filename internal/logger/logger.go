@@ -7,15 +7,15 @@ import (
 
 // ILogger определяет набор методов ведения журнала с различными уровнями серьезности.
 type ILogger interface {
-	Info(args ...interface{})
-	Infof(template string, args ...interface{})
-	Error(args ...interface{})
-	Infow(msg string, keysAndValues ...interface{})
-	Warn(args ...interface{})
-	Fatal(args ...interface{})
-	Debugw(msg string, keysAndValues ...interface{})
-	Debug(args ...interface{})
-	Errorf(template string, args ...interface{})
+	Info(args ...any)
+	Infof(template string, args ...any)
+	Error(args ...any)
+	Infow(msg string, keysAndValues ...any)
+	Warn(args ...any)
+	Fatal(args ...any)
+	Debugw(msg string, keysAndValues ...any)
+	Debug(args ...any)
+	Errorf(template string, args ...any)
 }
 
 // Log глобальный логер приложения

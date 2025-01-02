@@ -47,6 +47,7 @@ func NewCRUDTextService(client crudClient, user *user.User) *CRUDService[*payloa
 	}
 }
 
+// NewDefaultTextService создает службу CRUD по умолчанию для управления текстами с использованием глобального клиента для взаимодействия с сервером и текущего пользователя.
 func NewDefaultTextService() *CRUDService[*payloads.TextWithComment, TextData] {
 	return NewCRUDTextService(serverclient.Inst, user.CurrentUser)
 }

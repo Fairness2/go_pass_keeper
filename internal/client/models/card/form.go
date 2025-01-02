@@ -131,22 +131,30 @@ func (m Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
-			s := msg.String()
-			if s == "enter" && m.focusIndex == len(m.inputs) {
-				return m.updateCard()
-			}
-			// На комментарии нужно разрешать делать новую строку
-			if s == "enter" && m.focusIndex == len(m.inputs)-1 {
-				break
-			}
-			m.focusIndex = models.IncrementCircleIndex(m.focusIndex, len(m.inputs), s)
-
-			return m, models.GetCmds(m.inputs, m.focusIndex)
+			return m.navigationMessage(msg)
 		}
 	}
 	// Handle character input and blinking
 	cmd := models.UpdateInputs(msg, m.inputs)
 	return m, cmd
+}
+
+// navigationMessage обрабатывает события нажатия клавиш для навигации по полям ввода в форме и соответствующим образом запускает обновления фокуса полей или действия.
+func (m Form) navigationMessage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	s := msg.String()
+	// На комментарии нужно разрешать делать новую строку
+	if s == "enter" {
+		// На комментарии нужно разрешать делать новую строку
+		if m.focusIndex == len(m.inputs)-1 {
+			return m, models.UpdateInputs(msg, m.inputs)
+		}
+		if m.focusIndex == len(m.inputs) {
+			return m.updateCard()
+		}
+	}
+	m.focusIndex = models.IncrementCircleIndex(m.focusIndex, len(m.inputs), s)
+
+	return m, models.GetCmds(m.inputs, m.focusIndex)
 }
 
 // updateCard обрабатывает ввод пользователя для создания или обновления записи карты, шифрует ее и возвращает соответствующую модель.
@@ -158,20 +166,16 @@ func (m Form) updateCard() (tea.Model, tea.Cmd) {
 	m.data.Comment = m.inputs[commentI].Value()
 	var err error
 	m.data, err = m.pService.EncryptItem(m.data)
+	if err == nil {
+		if m.data.ID == "" {
+			err = m.pService.Create(m.data)
+		} else {
+			err = m.pService.Update(m.data)
+		}
+	}
 	if err != nil {
 		m.modelError = err
 		return m, models.GetCmds(m.inputs, m.focusIndex)
-	}
-	if m.data.ID == "" {
-		if err = m.pService.Create(m.data); err != nil {
-			m.modelError = err
-			return m, models.GetCmds(m.inputs, m.focusIndex)
-		}
-	} else {
-		if err = m.pService.Update(m.data); err != nil {
-			m.modelError = err
-			return m, models.GetCmds(m.inputs, m.focusIndex)
-		}
 	}
 	l := NewList(service.NewDefaultCardService())
 	return l, l.Init()

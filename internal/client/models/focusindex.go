@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"passkeeper/internal/client/components"
 	"passkeeper/internal/client/style"
@@ -21,12 +22,21 @@ const (
 )
 
 var (
+	// BaseFormHelp определяет список привязок клавиш для базовой навигации по форме и таких действий, как выход, навигация и подтверждение.
 	BaseFormHelp = []key.Binding{
 		key.NewBinding(key.WithHelp("ctrl+c, esc", EscapeText), key.WithKeys("ctrl+c", "esc")),
 		key.NewBinding(key.WithHelp("tab, shift+tab, up, down", NavigationText), key.WithKeys("tab", "shift+tab", "up", "down")),
 		key.NewBinding(key.WithHelp("enter", OKText), key.WithKeys("enter")),
 	}
 )
+
+// FormViewConfig определяет конфигурацию для рендеринга представлений формы, включая заголовки и состояния кнопок.
+type FormViewConfig struct {
+	HeaderNewText    string
+	HeaderUpdateText string
+	BlurredButton    string
+	FocusedButton    string
+}
 
 // IncrementCircleIndex циклически корректирует значение индекса на основе заданного ключа и общего количества полей.
 // Если клавиша «вверх» или «shift+tab», индекс уменьшается, в противном случае — увеличивается.
@@ -59,13 +69,8 @@ func GetCmds(inputs []components.BlinkInput, focusIndex int) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-type FormViewConfig struct {
-	HeaderNewText    string
-	HeaderUpdateText string
-	BlurredButton    string
-	FocusedButton    string
-}
-
+// FormView отображает представление формы на основе предоставленной конфигурации, входных данных, состояния фокуса, ошибки и текста справки.
+// Он возвращает отформатированную строку с заголовком, входными данными, ошибкой, кнопкой и текстом справки в определенном шаблоне.
 func FormView(cnf *FormViewConfig, dataID string, inputs []components.BlinkInput, focusIndex int, modelError error, help string) string {
 	// Выбираем текст заголовка
 	h := cnf.HeaderNewText
@@ -107,4 +112,10 @@ func UpdateInputs(msg tea.Msg, inputs []components.BlinkInput) tea.Cmd {
 		}
 	}
 	return tea.Batch(cmds...)
+}
+
+// Resize настраивает размеры модели списка в соответствии с новым размером окна с учетом полей кадра.
+func Resize(l *list.Model, msg tea.WindowSizeMsg) {
+	h, v := style.DocStyle.GetFrameSize()
+	l.SetSize(msg.Width-h, msg.Height-v)
 }

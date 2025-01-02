@@ -15,47 +15,47 @@ type InternalLogger struct {
 	logs []string
 }
 
-func (l *InternalLogger) Debug(args ...interface{}) {
+func (l *InternalLogger) Debug(args ...any) {
 	l.log("DEBUG", args...)
 }
 
-func (l *InternalLogger) Errorf(template string, args ...interface{}) {
+func (l *InternalLogger) Errorf(template string, args ...any) {
 	logEntry := fmt.Sprintf("[ERROR] "+template, args...)
 	l.logs = append(l.logs, logEntry)
 }
 
-func (l *InternalLogger) log(level string, args ...interface{}) {
+func (l *InternalLogger) log(level string, args ...any) {
 	logEntry := fmt.Sprintf("[%s] %s", level, fmt.Sprint(args...))
 	l.logs = append(l.logs, logEntry)
 }
 
-func (l *InternalLogger) Info(args ...interface{}) {
+func (l *InternalLogger) Info(args ...any) {
 	l.log("INFO", args...)
 }
 
-func (l *InternalLogger) Infof(template string, args ...interface{}) {
+func (l *InternalLogger) Infof(template string, args ...any) {
 	logEntry := fmt.Sprintf("[INFO] "+template, args...)
 	l.logs = append(l.logs, logEntry)
 }
 
-func (l *InternalLogger) Error(args ...interface{}) {
+func (l *InternalLogger) Error(args ...any) {
 	l.log("ERROR", args...)
 }
 
-func (l *InternalLogger) Infow(msg string, keysAndValues ...interface{}) {
+func (l *InternalLogger) Infow(msg string, keysAndValues ...any) {
 	logEntry := fmt.Sprintf("[INFO] %s %v", msg, keysAndValues)
 	l.logs = append(l.logs, logEntry)
 }
 
-func (l *InternalLogger) Warn(args ...interface{}) {
+func (l *InternalLogger) Warn(args ...any) {
 	l.log("WARN", args...)
 }
 
-func (l *InternalLogger) Fatal(args ...interface{}) {
+func (l *InternalLogger) Fatal(args ...any) {
 	l.log("FATAL", args...)
 }
 
-func (l *InternalLogger) Debugw(msg string, keysAndValues ...interface{}) {
+func (l *InternalLogger) Debugw(msg string, keysAndValues ...any) {
 	logEntry := fmt.Sprintf("[DEBUG] %s %v", msg, keysAndValues)
 	l.logs = append(l.logs, logEntry)
 }

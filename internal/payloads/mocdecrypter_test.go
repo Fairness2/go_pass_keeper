@@ -43,7 +43,7 @@ func (m *MockEncrypter) Encrypt(body []byte) ([]byte, error) {
 }
 
 // Encrypt indicates an expected call of Encrypt.
-func (mr *MockEncrypterMockRecorder) Encrypt(body interface{}) *gomock.Call {
+func (mr *MockEncrypterMockRecorder) Encrypt(body any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Encrypt", reflect.TypeOf((*MockEncrypter)(nil).Encrypt), body)
 }

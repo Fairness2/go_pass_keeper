@@ -133,8 +133,7 @@ func (m List) updateWhileNotSelected(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 	case tea.WindowSizeMsg:
-		h, v := style.DocStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+		models.Resize(&m.list, msg)
 	}
 
 	var cmd tea.Cmd

@@ -89,22 +89,27 @@ func (m Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		// Set focus to next input
 		case "tab", "shift+tab", "enter", "up", "down":
-			s := msg.String()
-			if s == "enter" && m.focusIndex == len(m.inputs) {
-				return m.updateFile()
-			}
-			// На комментарии нужно разрешать делать новую строку
-			if s == "enter" && m.focusIndex == len(m.inputs)-1 {
-				break
-			}
-			m.focusIndex = models.IncrementCircleIndex(m.focusIndex, len(m.inputs), s)
-
-			return m, models.GetCmds(m.inputs, m.focusIndex)
+			return m.navigationMessage(msg)
 		}
 	}
 	// Handle character input and blinking
 	cmd := models.UpdateInputs(msg, m.inputs)
 	return m, cmd
+}
+
+// navigationMessage обрабатывает события нажатия клавиш для навигации по полям ввода в форме и соответствующим образом запускает обновления фокуса полей или действия.
+func (m Form) navigationMessage(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	s := msg.String()
+	if s == "enter" && m.focusIndex == len(m.inputs) {
+		return m.updateFile()
+	}
+	// На комментарии нужно разрешать делать новую строку
+	if s == "enter" && m.focusIndex == len(m.inputs)-1 {
+		return m, models.UpdateInputs(msg, m.inputs)
+	}
+	m.focusIndex = models.IncrementCircleIndex(m.focusIndex, len(m.inputs), s)
+
+	return m, models.GetCmds(m.inputs, m.focusIndex)
 }
 
 // updateFile обрабатывает ввод пользователя для создания или обновления записи файла, шифрует ее и возвращает соответствующую модель.
@@ -113,26 +118,21 @@ func (m Form) updateFile() (tea.Model, tea.Cmd) {
 	m.data.Comment = m.inputs[commentI].Value()
 	var err error
 	m.data, err = m.pService.EncryptItem(m.data)
+	if err == nil {
+		if m.data.ID == "" {
+			var encFilePath string
+			encFilePath, err = m.pService.EncryptFile(m.inputs[filePathI].Value())
+			if err == nil {
+				defer os.Remove(encFilePath)
+				err = m.pService.CreateFile(m.data, encFilePath)
+			}
+		} else {
+			err = m.pService.Update(m.data)
+		}
+	}
 	if err != nil {
 		m.modelError = err
 		return m, models.GetCmds(m.inputs, m.focusIndex)
-	}
-	if m.data.ID == "" {
-		encFilePath, err := m.pService.EncryptFile(m.inputs[filePathI].Value())
-		if err != nil {
-			m.modelError = err
-			return m, models.GetCmds(m.inputs, m.focusIndex)
-		}
-		defer os.Remove(encFilePath)
-		if err = m.pService.CreateFile(m.data, encFilePath); err != nil {
-			m.modelError = err
-			return m, models.GetCmds(m.inputs, m.focusIndex)
-		}
-	} else {
-		if err = m.pService.Update(m.data); err != nil {
-			m.modelError = err
-			return m, models.GetCmds(m.inputs, m.focusIndex)
-		}
 	}
 	l := NewList(service.NewDefaultFileService())
 	return l, l.Init()

@@ -35,6 +35,7 @@ func NewCRUDPasswordService(client crudClient, user *user.User) *CRUDService[*pa
 	}
 }
 
+// NewDefaultPasswordService создает службу CRUD по умолчанию для управления паролями с использованием глобального клиента для взаимодействия с сервером и текущего пользователя.
 func NewDefaultPasswordService() *CRUDService[*payloads.PasswordWithComment, PassData] {
 	return NewCRUDPasswordService(serverclient.Inst, user.CurrentUser)
 }
